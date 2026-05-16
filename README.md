@@ -9,9 +9,9 @@ For the fastest path, read [docs/QUICKSTART.md](docs/QUICKSTART.md).
 - Scans one image or every supported image in `data/src/`.
 - Identifies album title and artist/band using LM Studio or Gemini.
 - Estimates a conservative EUR resale value.
-- Writes a CSV catalog with confidence and review notes.
+- Writes a CSV catalog with the image file name (for example `DSC01.jpg`) as the row identifier, plus confidence and review notes.
 
-Default provider: LM Studio local model `qwen2.5-vl-7b-instruct`.
+Default provider: LM Studio local model `qwen2.5-vl-7b-instruct`. An alternate local vision option, `gemma-3-4b-it`, is available from the interactive menu or with `--model` when loaded in LM Studio.
 
 ## Project layout
 
@@ -26,7 +26,8 @@ data/src/                input images (ignored except .gitkeep)
 data/dst/                intermediate output placeholder
 data/report/             CSV output (ignored except .gitkeep)
 docker/test/             Go test/runtime container
-docs/QUICKSTART.md       short usage guide
+docs/QUICKSTART.md       user usage guide
+docs/DEVELOPMENT.md      development, Docker, and test guide
 ```
 
 Supported image extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.dng`, `.heic`, `.heif`, `.tif`, `.tiff`.
@@ -34,21 +35,22 @@ Supported image extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.dng`, `.heic`, `
 ## Requirements
 
 - Docker with Compose.
-- For local recognition: LM Studio running at `http://localhost:1234/v1` with `qwen2.5-vl-7b-instruct` loaded.
+- For local recognition: LM Studio running on the host with `qwen2.5-vl-7b-instruct` loaded. Docker commands use `http://host.docker.internal:1234/v1` by default.
 - For Gemini recognition: `GEMINI_API_KEY` in the environment.
 
 ## Makefile commands
 
-Start the test/runtime container before running app commands:
+Build the Docker runtime before running app commands:
 
 ```bash
-make test-build
-make test-up
+make docker-build
 ```
 
 Common commands:
 
 ```bash
+make build
+make run
 make run IMAGE=data/src/DSC01.jpg
 make run-all
 make run-all-replace
@@ -59,7 +61,7 @@ make test-shell
 make test-down
 ```
 
-All app and Go test commands run inside the `docker/test` container. Go caches are bind-mounted under the ignored project-local `.cache/` directory.
+All app and Go test commands run inside Docker. Go caches are bind-mounted under the ignored project-local `.cache/` directory.
 
 ## Direct CLI usage inside the container
 
@@ -84,7 +86,7 @@ Default path: `data/report/album_catalog.csv`.
 
 Columns:
 
-- `source_image`
+- `source_image` — image file name used as ID, for example `DSC01.jpg`
 - `artist`
 - `title`
 - `identification_confidence`
@@ -93,24 +95,7 @@ Columns:
 - `price_basis`
 - `notes`
 
-Update mode keeps existing rows and skips images already present in the CSV. Replace mode regenerates the CSV from scratch.
-
-## AI demo video
-
-Generate a local one-minute demo video from `prompt.txt`:
-
-```bash
-make video-build
-make video-generate
-```
-
-Output:
-
-```text
-data/video/vinylquoter-ai-demo.mp4
-```
-
-The video is generated locally with `ffmpeg` in the `docker/video` container. Generated video files are ignored by Git.
+Update mode keeps existing rows and skips images already present in the CSV. Replace mode regenerates the CSV from scratch only for all-images runs; single-image CLI runs always update/create the CSV and never replace it.
 
 ## Data and Git
 

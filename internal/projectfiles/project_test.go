@@ -36,7 +36,7 @@ func read(t *testing.T, name string) string {
 
 func TestMakefileRunsGoInsideTestContainer(t *testing.T) {
 	makefile := read(t, "Makefile")
-	for _, want := range []string{"$(TEST_RUN) $(GO) run $(APP) --all", "$(TEST_RUN) $(GO) run $(APP) --all --replace", "$(TEST_RUN) $(GO) run $(APP) --all --provider gemini", "$(TEST_RUN) $(GO) test ./..."} {
+	for _, want := range []string{"$(DOCKER_RUN) $(GO) run $(APP)", "$(DOCKER_RUN) $(GO) run $(APP) --lm-studio-base-url \"$(LM_STUDIO_BASE_URL)\" $(MODEL_ARG) --all", "$(DOCKER_RUN) $(GO) run $(APP) --lm-studio-base-url \"$(LM_STUDIO_BASE_URL)\" $(MODEL_ARG) --all --replace", "$(DOCKER_RUN) $(GO) run $(APP) --all --provider gemini", "$(DOCKER_RUN) $(GO) build -o $(BIN) $(APP)", "$(DOCKER_RUN) $(GO) test ./..."} {
 		if !strings.Contains(makefile, want) {
 			t.Fatalf("Makefile missing %q", want)
 		}
@@ -67,20 +67,48 @@ func TestVideoGeneratorProjectFiles(t *testing.T) {
 	}
 }
 
-func TestMakefileExposesVideoTargets(t *testing.T) {
+func TestMakefileExposesDockerFirstAppTargets(t *testing.T) {
 	makefile := read(t, "Makefile")
-	for _, want := range []string{"video-build:", "video-generate:", "video-shell:", "$(VIDEO_COMPOSE)", "$(VIDEO_SERVICE)"} {
+	for _, want := range []string{"build:", "run:", "run-cli:", "docker-build:", "docker-shell:", "$(DOCKER_RUN)"} {
 		if !strings.Contains(makefile, want) {
 			t.Fatalf("Makefile missing %q", want)
 		}
 	}
+	for _, notWant := range []string{"run-local:", "video-build:", "video-generate:", "video-shell:", "$(VIDEO_COMPOSE)", "$(VIDEO_SERVICE)"} {
+		if strings.Contains(makefile, notWant) {
+			t.Fatalf("Makefile should not expose unsupported command %q", notWant)
+		}
+	}
 }
 
-func TestReadmeDocumentsVideoOutput(t *testing.T) {
+func TestReadmeDocumentsCLIAndDevelopmentDocs(t *testing.T) {
 	readme := read(t, "README.md")
-	for _, want := range []string{"AI demo video", "make video-build", "make video-generate", "data/video/vinylquoter-ai-demo.mp4"} {
+	for _, want := range []string{"make build", "make run", "docs/QUICKSTART.md", "docs/DEVELOPMENT.md", "DSC01.jpg"} {
 		if !strings.Contains(readme, want) {
 			t.Fatalf("README missing %q", want)
+		}
+	}
+}
+
+func TestQuickstartDocumentsInteractiveAndFlagUsage(t *testing.T) {
+	quickstart := read(t, "docs/QUICKSTART.md")
+	for _, want := range []string{"make docker-build", "make run", "interactive menu", "IMAGE=DSC01.jpg", "make run-all", "make run-all-replace", "make run-gemini", "make run-cli", "source_image"} {
+		if !strings.Contains(quickstart, want) {
+			t.Fatalf("QUICKSTART missing %q", want)
+		}
+	}
+	for _, notWant := range []string{"go run ./cmd/vinyl-quoter", "bin/vinyl-quoter", "make test-build", "make test-up", "make test-down"} {
+		if strings.Contains(quickstart, notWant) {
+			t.Fatalf("QUICKSTART should not include host/development command %q", notWant)
+		}
+	}
+}
+
+func TestDevelopmentDocDocumentsTestsAndDocker(t *testing.T) {
+	development := read(t, "docs/DEVELOPMENT.md")
+	for _, want := range []string{"make test-build", "make test-up", "make test", "make quality", "make test-down"} {
+		if !strings.Contains(development, want) {
+			t.Fatalf("DEVELOPMENT missing %q", want)
 		}
 	}
 }
