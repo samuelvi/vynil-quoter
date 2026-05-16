@@ -185,6 +185,9 @@ func TestRunInteractiveOptionTwoProcessesAllImages(t *testing.T) {
 	if strings.Join(seen, ",") != "DSC01.jpg,DSC02.jpg" {
 		t.Fatalf("option 2 should process all images, got %#v", seen)
 	}
+	if !strings.Contains(stdout.String(), "Procesando todas las imágenes") {
+		t.Fatalf("option 2 should show visible progress, got %s", stdout.String())
+	}
 }
 
 func TestRunInteractiveResetsActionModeAfterOptionTwo(t *testing.T) {

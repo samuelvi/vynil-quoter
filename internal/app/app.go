@@ -97,6 +97,11 @@ func runOnce(ctx context.Context, cfg config.RunConfig, stdout io.Writer, stderr
 		fmt.Fprintln(stderr, "error:", err)
 		return 2
 	}
+	if cfg.AllImages {
+		fmt.Fprintf(stdout, "Procesando todas las imágenes (%d encontradas)...\n", len(images))
+	} else {
+		fmt.Fprintf(stdout, "Procesando imagen: %s\n", catalog.ImageID(images[0]))
+	}
 	rows, err := Process(ctx, images, cfg.ReportPath, cfg.Replace, recognizer)
 	if err != nil {
 		fmt.Fprintln(stderr, "error:", err)
