@@ -17,6 +17,9 @@ func ReadMenu(in io.Reader, out io.Writer) (config.RunConfig, error) {
 
 func ReadMenuWithState(in io.Reader, out io.Writer, state config.RunConfig) (config.RunConfig, error) {
 	cfg := state
+	cfg.Image = ""
+	cfg.AllImages = false
+	cfg.Replace = false
 	reader := readerFor(in)
 	fmt.Fprintln(out, "\nVinyl Quoter")
 	fmt.Fprintln(out, "1) Procesar una imagen concreta")

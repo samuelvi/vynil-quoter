@@ -153,3 +153,78 @@ func TestRunInteractivePersistsSelectedModelAndCSV(t *testing.T) {
 		t.Fatalf("state was not persisted: %#v", seen[0])
 	}
 }
+
+func TestRunInteractiveOptionTwoProcessesAllImages(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "data", "src")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"DSC01.jpg", "DSC02.jpg"} {
+		if err := os.WriteFile(filepath.Join(src, name), []byte("jpg"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	stdin := bytes.NewBufferString("2\n5\n")
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cfg := config.DefaultRunConfig()
+	cfg.SourceDir = src
+	cfg.ReportPath = report
+	var seen []string
+	code := runWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
+		return recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+			seen = append(seen, filepath.Base(imagePath))
+			return catalog.Identification{Artist: "A", Title: "T"}, nil
+		}), nil
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if strings.Join(seen, ",") != "DSC01.jpg,DSC02.jpg" {
+		t.Fatalf("option 2 should process all images, got %#v", seen)
+	}
+}
+
+func TestRunInteractiveResetsActionModeAfterOptionTwo(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "data", "src")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"DSC01.jpg", "DSC02.jpg"} {
+		if err := os.WriteFile(filepath.Join(src, name), []byte("jpg"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	stdin := bytes.NewBufferString("2\n1\nDSC01.jpg\n5\n")
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cfg := config.DefaultRunConfig()
+	cfg.SourceDir = src
+	cfg.ReportPath = report
+	var seen []string
+	code := runWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
+		return recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+			seen = append(seen, filepath.Base(imagePath))
+			return catalog.Identification{Artist: "A", Title: "T"}, nil
+		}), nil
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("unexpected stderr: %s", stderr.String())
+	}
+	if strings.Join(seen, ",") != "DSC01.jpg,DSC02.jpg" {
+		t.Fatalf("option 1 should not fail after option 2, got %#v", seen)
+	}
+}
+
+type recognizerFunc func(context.Context, string) (catalog.Identification, error)
+
+func (fn recognizerFunc) Identify(ctx context.Context, imagePath string) (catalog.Identification, error) {
+	return fn(ctx, imagePath)
+}
