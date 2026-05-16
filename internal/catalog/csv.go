@@ -7,6 +7,10 @@ import (
 	"path/filepath"
 )
 
+func ImageID(imagePath string) string {
+	return filepath.Base(imagePath)
+}
+
 func Read(path string) ([]Row, error) {
 	file, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -65,15 +69,11 @@ func Pending(images []string, reportPath string, replace bool) ([]string, error)
 	}
 	existing := map[string]struct{}{}
 	for _, row := range rows {
-		existing[row.SourceImage] = struct{}{}
-		existing[filepath.Base(row.SourceImage)] = struct{}{}
+		existing[ImageID(row.SourceImage)] = struct{}{}
 	}
 	pending := make([]string, 0, len(images))
 	for _, image := range images {
-		if _, ok := existing[image]; ok {
-			continue
-		}
-		if _, ok := existing[filepath.Base(image)]; ok {
+		if _, ok := existing[ImageID(image)]; ok {
 			continue
 		}
 		pending = append(pending, image)

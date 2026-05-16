@@ -46,11 +46,16 @@ func ReadMenu(in io.Reader, out io.Writer) (config.RunConfig, error) {
 func ReadProvider(in *bufio.Reader, out io.Writer) (string, string, error) {
 	fmt.Fprintln(out, "\nModelo de reconocimiento")
 	fmt.Fprintf(out, "1) LM Studio local - %s [por defecto]\n", config.DefaultLMStudioModel)
-	fmt.Fprintf(out, "2) Gemini - %s\n", config.DefaultGeminiModel)
-	fmt.Fprint(out, "Elige modelo [1-2, Enter=1]: ")
+	fmt.Fprintf(out, "2) LM Studio local - %s\n", config.AlternateLMStudioModel)
+	fmt.Fprintf(out, "3) Gemini - %s\n", config.DefaultGeminiModel)
+	fmt.Fprint(out, "Elige modelo [1-3, Enter=1]: ")
 	choice, _ := in.ReadString('\n')
-	if strings.TrimSpace(choice) == "2" {
+	switch strings.TrimSpace(choice) {
+	case "2":
+		return config.ProviderLMStudio, config.AlternateLMStudioModel, nil
+	case "3":
 		return config.ProviderGemini, config.DefaultGeminiModel, nil
+	default:
+		return config.ProviderLMStudio, config.DefaultLMStudioModel, nil
 	}
-	return config.ProviderLMStudio, config.DefaultLMStudioModel, nil
 }

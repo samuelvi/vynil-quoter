@@ -40,6 +40,9 @@ func ParseArgs(args []string) (config.RunConfig, error) {
 	if cfg.Provider == config.ProviderLMStudio && cfg.Model == "" {
 		cfg.Model = config.DefaultLMStudioModel
 	}
+	if cfg.Image != "" {
+		cfg.Replace = false
+	}
 	return cfg, nil
 }
 
@@ -92,7 +95,7 @@ func Process(ctx context.Context, images []string, reportPath string, replace bo
 		if err != nil {
 			identification = catalog.Identification{Artist: "Unknown", Title: "Unknown", IdentificationConfidence: "manual-review", PriceConfidence: "manual-review", Notes: "identification failed: " + err.Error()}
 		}
-		rows = append(rows, catalog.Row{SourceImage: image, Artist: identification.Artist, Title: identification.Title, IdentificationConfidence: identification.IdentificationConfidence, RecommendedPriceEUR: identification.RecommendedPriceEUR, PriceConfidence: identification.PriceConfidence, PriceBasis: identification.PriceBasis, Notes: identification.Notes})
+		rows = append(rows, catalog.Row{SourceImage: catalog.ImageID(image), Artist: identification.Artist, Title: identification.Title, IdentificationConfidence: identification.IdentificationConfidence, RecommendedPriceEUR: identification.RecommendedPriceEUR, PriceConfidence: identification.PriceConfidence, PriceBasis: identification.PriceBasis, Notes: identification.Notes})
 		if err := catalog.Write(reportPath, rows); err != nil {
 			return nil, err
 		}

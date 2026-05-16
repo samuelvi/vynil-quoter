@@ -17,7 +17,7 @@ func TestMenuChoiceFourMeansAllAndReplace(t *testing.T) {
 }
 
 func TestMenuCanSelectGeminiProvider(t *testing.T) {
-	cfg, err := ReadMenu(bytes.NewBufferString("2\n2\n"), &bytes.Buffer{})
+	cfg, err := ReadMenu(bytes.NewBufferString("2\n3\n"), &bytes.Buffer{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,6 +32,16 @@ func TestMenuDefaultProviderIsLocalVisionModel(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cfg.Provider != config.ProviderLMStudio || cfg.Model != config.DefaultLMStudioModel {
+		t.Fatalf("got %#v", cfg)
+	}
+}
+
+func TestMenuCanSelectAlternateLMStudioVisionModel(t *testing.T) {
+	cfg, err := ReadMenu(bytes.NewBufferString("2\n2\n"), &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Provider != config.ProviderLMStudio || cfg.Model != config.AlternateLMStudioModel {
 		t.Fatalf("got %#v", cfg)
 	}
 }

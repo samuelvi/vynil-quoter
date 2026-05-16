@@ -6,6 +6,7 @@ const (
 	DefaultGeminiModel     = "gemini-2.5-flash-lite"
 	DefaultLMStudioBaseURL = "http://localhost:1234/v1"
 	DefaultLMStudioModel   = "qwen2.5-vl-7b-instruct"
+	AlternateLMStudioModel = "gemma-3-4b-it"
 	DefaultProvider        = "lm-studio"
 	ProviderGemini         = "gemini"
 	ProviderLMStudio       = "lm-studio"
