@@ -1,42 +1,62 @@
-.PHONY: help run run-all run-all-replace run-gemini test quality clean opencode.init opencode.link opencode.verify opencode.open opencode.start
+.PHONY: help run run-all run-all-replace run-gemini test quality clean test-build test-up test-down test-shell opencode.init opencode.link opencode.verify opencode.open opencode.start
 
-PYTHON ?= python3
 IMAGE ?=
+TEST_COMPOSE ?= docker/test/docker-compose.yml
+TEST_SERVICE ?= go-scripts
+TEST_RUN ?= docker compose -f $(TEST_COMPOSE) exec $(TEST_SERVICE)
+GO ?= go
+APP ?= ./cmd/vinyl-quoter
 
 help:
 	@printf "VinylQuoter commands:\n"
-	@printf "  make run IMAGE=src/DSC01.jpg  Process one image with the interactive/default provider\n"
-	@printf "  make run-all                 Update report/album_catalog.csv from all src images\n"
-	@printf "  make run-all-replace         Regenerate report/album_catalog.csv from all src images\n"
-	@printf "  make run-gemini              Update report using Gemini instead of LM Studio\n"
-	@printf "  make test                    Run unit tests\n"
+	@printf "  make run IMAGE=data/src/DSC01.jpg  Process one image inside the test container\n"
+	@printf "  make run-all                 Update data/report/album_catalog.csv inside the test container\n"
+	@printf "  make run-all-replace         Regenerate data/report/album_catalog.csv inside the test container\n"
+	@printf "  make run-gemini              Update report using Gemini inside the test container\n"
+	@printf "  make test-build              Build the Go scripts test image\n"
+	@printf "  make test-up                 Start the Go scripts test container\n"
+	@printf "  make test-down               Stop the Go scripts test container\n"
+	@printf "  make test-shell              Open a shell in the Go scripts test container\n"
+	@printf "  make test                    Run Go unit tests inside the test container\n"
 	@printf "  make quality                 Run tests and strict quick quality gate\n"
 	@printf "  make clean                   Remove local Python cache files\n"
 
 run:
 	@if [ -z "$(IMAGE)" ]; then \
-		$(PYTHON) vinyl_quoter.py; \
+		$(TEST_RUN) $(GO) run $(APP); \
 	else \
-		$(PYTHON) vinyl_quoter.py --image "$(IMAGE)"; \
+		$(TEST_RUN) $(GO) run $(APP) --image "$(IMAGE)"; \
 	fi
 
 run-all:
-	$(PYTHON) vinyl_quoter.py --all
+	$(TEST_RUN) $(GO) run $(APP) --all
 
 run-all-replace:
-	$(PYTHON) vinyl_quoter.py --all --replace
+	$(TEST_RUN) $(GO) run $(APP) --all --replace
 
 run-gemini:
-	$(PYTHON) vinyl_quoter.py --all --provider gemini
+	$(TEST_RUN) $(GO) run $(APP) --all --provider gemini
 
 test:
-	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -m unittest discover -s tests
+	$(TEST_RUN) $(GO) test ./...
 
 quality: test
-	$(PYTHON) .opencode/meta/hooks/quality_gate.py --workspace . --mode quick --strict
+	python3 .opencode/meta/hooks/quality_gate.py --workspace . --mode quick --strict
 
 clean:
-	rm -rf __pycache__ tests/__pycache__ .DS_Store
+	rm -rf __pycache__ src/__pycache__ tests/__pycache__ .DS_Store .cache/go-build
+
+test-build:
+	docker compose -f $(TEST_COMPOSE) build
+
+test-up:
+	docker compose -f $(TEST_COMPOSE) up -d
+
+test-down:
+	docker compose -f $(TEST_COMPOSE) down --remove-orphans
+
+test-shell:
+	docker compose -f $(TEST_COMPOSE) exec $(TEST_SERVICE) sh
 
 opencode.init:
 	$(MAKE) -C opencode-bundle bundle-init-all

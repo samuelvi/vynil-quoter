@@ -1,0 +1,60 @@
+package projectfiles
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func root(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("go.mod not found")
+		}
+		dir = parent
+	}
+}
+
+func read(t *testing.T, name string) string {
+	t.Helper()
+	body, err := os.ReadFile(filepath.Join(root(t), name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(body)
+}
+
+func TestMakefileRunsGoInsideTestContainer(t *testing.T) {
+	makefile := read(t, "Makefile")
+	for _, want := range []string{"$(TEST_RUN) $(GO) run $(APP) --all", "$(TEST_RUN) $(GO) run $(APP) --all --replace", "$(TEST_RUN) $(GO) run $(APP) --all --provider gemini", "$(TEST_RUN) $(GO) test ./..."} {
+		if !strings.Contains(makefile, want) {
+			t.Fatalf("Makefile missing %q", want)
+		}
+	}
+}
+
+func TestDockerVolumesAreExplicitBindMounts(t *testing.T) {
+	compose := read(t, "docker/test/docker-compose.yml")
+	if strings.Count(compose, "type: bind") != 3 {
+		t.Fatalf("compose should define 3 explicit bind mounts:\n%s", compose)
+	}
+}
+
+func TestGitignoreKeepsOnlyDataPlaceholders(t *testing.T) {
+	gitignore := read(t, ".gitignore")
+	for _, want := range []string{"data/*", "data/src/*", "!data/src/.gitkeep", "data/dst/*", "!data/dst/.gitkeep", "data/report/*", "!data/report/.gitkeep"} {
+		if !strings.Contains(gitignore, want) {
+			t.Fatalf(".gitignore missing %q", want)
+		}
+	}
+}

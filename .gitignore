@@ -18,7 +18,13 @@ opencode-bundle/
 memory-bank/
 
 # Input/output data
-src/
-dst/
-report/
-reports/
+data/*
+!data/src/
+data/src/*
+!data/src/.gitkeep
+!data/dst/
+data/dst/*
+!data/dst/.gitkeep
+!data/report/
+data/report/*
+!data/report/.gitkeep
