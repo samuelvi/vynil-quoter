@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"testing"
 	"vinylquoter/internal/catalog"
 	"vinylquoter/internal/config"
+	"vinylquoter/internal/provider"
 )
 
 type fakeRecognizer struct{}
@@ -89,5 +91,65 @@ func TestParseArgsSupportsAlternateLMStudioVisionModel(t *testing.T) {
 	}
 	if cfg.Provider != config.ProviderLMStudio || cfg.Model != config.AlternateLMStudioModel {
 		t.Fatalf("got %#v", cfg)
+	}
+}
+
+func TestRunInteractiveReturnsToMenuUntilExit(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "data", "src")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	image := filepath.Join(src, "DSC01.jpg")
+	if err := os.WriteFile(image, []byte("jpg"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	stdin := bytes.NewBufferString("1\n" + image + "\n5\n")
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cfg := config.DefaultRunConfig()
+	cfg.SourceDir = src
+	cfg.ReportPath = report
+	code := runWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
+		return fakeRecognizer{}, nil
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if strings.Count(stdout.String(), "Vinyl Quoter") < 2 {
+		t.Fatalf("menu should be shown again before exit, got %s", stdout.String())
+	}
+}
+
+func TestRunInteractivePersistsSelectedModelAndCSV(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "data", "src")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	image := filepath.Join(src, "DSC01.jpg")
+	if err := os.WriteFile(image, []byte("jpg"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	report := filepath.Join(tmp, "custom.csv")
+	stdin := bytes.NewBufferString("4\n3\n3\n1\n" + report + "\n1\n" + image + "\n5\n")
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cfg := config.DefaultRunConfig()
+	cfg.SourceDir = src
+	var seen []config.RunConfig
+	code := runWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(cfg config.RunConfig) (provider.Recognizer, error) {
+		seen = append(seen, cfg)
+		return fakeRecognizer{}, nil
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if len(seen) != 1 {
+		t.Fatalf("got configs %#v", seen)
+	}
+	if seen[0].ReportPath != report || seen[0].Provider != config.ProviderGemini || seen[0].Model != config.DefaultGeminiModel {
+		t.Fatalf("state was not persisted: %#v", seen[0])
 	}
 }

@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -52,13 +54,40 @@ func Run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer, 
 		fmt.Fprintln(stderr, err)
 		return 2
 	}
-	if cfg.Image == "" && !cfg.AllImages {
-		cfg, err = ui.ReadMenu(stdin, stdout)
-		if err != nil {
+	return runWithRecognizerFactory(ctx, cfg, stdin, stdout, stderr, recognizerFor)
+}
+
+func runWithRecognizerFactory(ctx context.Context, cfg config.RunConfig, stdin io.Reader, stdout io.Writer, stderr io.Writer, factory func(config.RunConfig) (provider.Recognizer, error)) int {
+	if cfg.Image != "" || cfg.AllImages {
+		return runOnce(ctx, cfg, stdout, stderr, factory)
+	}
+	reader := bufio.NewReader(stdin)
+	state := cfg
+	for {
+		menuCfg, err := ui.ReadMenuWithState(reader, stdout, state)
+		state = menuCfg
+		if errors.Is(err, io.EOF) {
 			return 0
 		}
+		if errors.Is(err, ui.ErrNoAction) {
+			continue
+		}
+		if err != nil {
+			fmt.Fprintln(stderr, "error:", err)
+			continue
+		}
+		menuCfg.SourceDir = state.SourceDir
+		menuCfg.ReportPath = state.ReportPath
+		menuCfg.LMStudioBaseURL = state.LMStudioBaseURL
+		menuCfg.TimeoutSeconds = cfg.TimeoutSeconds
+		menuCfg.MaxRetries = cfg.MaxRetries
+		menuCfg.RetryDelaySecs = cfg.RetryDelaySecs
+		_ = runOnce(ctx, menuCfg, stdout, stderr, factory)
 	}
-	recognizer, err := recognizerFor(cfg)
+}
+
+func runOnce(ctx context.Context, cfg config.RunConfig, stdout io.Writer, stderr io.Writer, factory func(config.RunConfig) (provider.Recognizer, error)) int {
+	recognizer, err := factory(cfg)
 	if err != nil {
 		fmt.Fprintln(stderr, "error:", err)
 		return 2
