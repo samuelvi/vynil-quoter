@@ -2,6 +2,8 @@
 
 Use this guide for tests, Docker runtime, and quality checks. User-facing CLI usage lives in `docs/QUICKSTART.md`.
 
+The app pipeline is `data/src → data/dst → model → CSV`: source photos are cropped locally first, cropped files are saved in `data/dst`, and only the cropped image is sent to the recognizer.
+
 ## Docker app/test runtime
 
 Most Make targets auto-build Docker image dependencies before running. You can still build it explicitly:

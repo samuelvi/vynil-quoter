@@ -92,7 +92,7 @@ func TestMakefileAppTargetsAutoPrepareDocker(t *testing.T) {
 
 func TestReadmeDocumentsCLIAndDevelopmentDocs(t *testing.T) {
 	readme := read(t, "README.md")
-	for _, want := range []string{"make build", "make run", "make run-cli", "docs/QUICKSTART.md", "docs/DEVELOPMENT.md", "DSC01.jpg", "No manual rebuild is needed for normal use", "Go recompiles changed code automatically inside Docker", "Guardado csv", "Modelo (<current provider: model>)"} {
+	for _, want := range []string{"make build", "make run", "make run-cli", "docs/QUICKSTART.md", "docs/DEVELOPMENT.md", "DSC01.jpg", "No manual rebuild is needed for normal use", "Go recompiles changed code automatically inside Docker", "Guardado csv", "Modelo (<current provider: model>)", "crops source images into `data/dst`", "analyzes the cropped image"} {
 		if !strings.Contains(readme, want) {
 			t.Fatalf("README missing %q", want)
 		}
@@ -104,7 +104,7 @@ func TestReadmeDocumentsCLIAndDevelopmentDocs(t *testing.T) {
 
 func TestQuickstartDocumentsInteractiveAndFlagUsage(t *testing.T) {
 	quickstart := read(t, "docs/QUICKSTART.md")
-	for _, want := range []string{"make run", "Make prepares Docker automatically", "No manual rebuild is needed", "Go recompiles changed code automatically inside Docker", "interactive menu", "Guardado csv", "Modelo (<current provider: model>)", "IMAGE=DSC01.jpg", "make run-all", "make run-all-replace", "make run-gemini", "make run-cli", "source_image"} {
+	for _, want := range []string{"make run", "Make prepares Docker automatically", "No manual rebuild is needed", "Go recompiles changed code automatically inside Docker", "interactive menu", "Guardado csv", "Modelo (<current provider: model>)", "IMAGE=DSC01.jpg", "make run-all", "make run-all-replace", "make run-gemini", "make run-cli", "source_image", "data/src → data/dst → model → CSV"} {
 		if !strings.Contains(quickstart, want) {
 			t.Fatalf("QUICKSTART missing %q", want)
 		}
@@ -136,7 +136,7 @@ func TestMakefileHelpDocumentsAutoRecompile(t *testing.T) {
 
 func TestPromptDocumentsDockerAutoPreparation(t *testing.T) {
 	prompt := read(t, "prompt.txt")
-	for _, want := range []string{"make run debe preparar Docker automáticamente", "make test debe preparar Docker automáticamente", "Menú principal exacto", "Guardado csv (<ruta actual>)", "Modelo (<proveedor: modelo actual>)", "El submenú Guardado csv no debe preguntar por modelo"} {
+	for _, want := range []string{"make run debe preparar Docker automáticamente", "make test debe preparar Docker automáticamente", "Menú principal exacto", "Guardado csv (<ruta actual>)", "Modelo (<proveedor: modelo actual>)", "El submenú Guardado csv no debe preguntar por modelo", "recortar cada imagen de data/src", "guardar el recorte en data/dst", "analizar la imagen recortada"} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt.txt missing %q", want)
 		}

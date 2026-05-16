@@ -2,6 +2,7 @@ package config
 
 const (
 	DefaultSourceDir       = "data/src"
+	DefaultDestinationDir  = "data/dst"
 	DefaultReportPath      = "data/report/album_catalog.csv"
 	DefaultGeminiModel     = "gemini-2.5-flash-lite"
 	DefaultLMStudioBaseURL = "http://localhost:1234/v1"
@@ -17,6 +18,7 @@ type RunConfig struct {
 	AllImages       bool
 	Replace         bool
 	SourceDir       string
+	DestinationDir  string
 	ReportPath      string
 	Provider        string
 	Model           string
@@ -29,6 +31,7 @@ type RunConfig struct {
 func DefaultRunConfig() RunConfig {
 	return RunConfig{
 		SourceDir:       DefaultSourceDir,
+		DestinationDir:  DefaultDestinationDir,
 		ReportPath:      DefaultReportPath,
 		Provider:        DefaultProvider,
 		Model:           DefaultLMStudioModel,

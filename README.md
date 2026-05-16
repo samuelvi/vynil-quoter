@@ -7,7 +7,8 @@ For the fastest path, read [docs/QUICKSTART.md](docs/QUICKSTART.md).
 ## What it does
 
 - Scans one image or every supported image in `data/src/`.
-- Identifies album title and artist/band using LM Studio or Gemini.
+- crops source images into `data/dst` to isolate the vinyl/cover from noisy backgrounds.
+- Identifies album title and artist/band using LM Studio or Gemini; it analyzes the cropped image from `data/dst`.
 - Estimates a conservative EUR resale value.
 - Writes a CSV catalog with the image file name (for example `DSC01.jpg`) as the row identifier, plus confidence and review notes.
 
@@ -19,11 +20,12 @@ Default provider: LM Studio local model `qwen2.5-vl-7b-instruct`. An alternate l
 cmd/vinyl-quoter/        CLI entrypoint
 internal/app/            orchestration and flags
 internal/catalog/        CSV rows, read/write, update/replace policy
+internal/crop/           local crop pipeline from source photos to data/dst
 internal/imageinput/     image discovery and supported extensions
 internal/provider/       recognizer interface and model clients
 internal/ui/             interactive menu
 data/src/                input images (ignored except .gitkeep)
-data/dst/                intermediate output placeholder
+data/dst/                cropped images generated from data/src
 data/report/             CSV output (ignored except .gitkeep)
 docker/test/             Go test/runtime container
 docs/QUICKSTART.md       user usage guide
@@ -89,12 +91,17 @@ make run-cli ARGS="--all --provider lm-studio --model qwen2.5-vl-7b-instruct"
 Important flags:
 
 - `--src`: source image directory, default `data/src`
+- `--dst`: cropped image directory, default `data/dst`
 - `--report`: CSV path, default `data/report/album_catalog.csv`
 - `--provider`: `lm-studio` or `gemini`
 - `--model`: model override
 - `--lm-studio-base-url`: default `http://localhost:1234/v1`
 
 ## CSV output
+
+Processing pipeline: `data/src → data/dst → model → CSV`.
+
+JPEG and PNG inputs are locally cropped before recognition. Unsupported decode formats are copied to `data/dst` as a fallback so the model can still inspect them.
 
 Default path: `data/report/album_catalog.csv`.
 

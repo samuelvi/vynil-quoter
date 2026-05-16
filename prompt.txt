@@ -19,6 +19,9 @@ Stack obligatorio:
 
 Objetivo del producto:
 - Leer imágenes de portadas de vinilos.
+- recortar cada imagen de data/src para aislar el vinilo/portada frente a fondos u otros objetos.
+- guardar el recorte en data/dst.
+- analizar la imagen recortada desde data/dst, no la original de data/src.
 - Identificar a qué álbum corresponden.
 - Obtener artista/banda y título del álbum.
 - Generar una valoración conservadora en euros.
@@ -48,6 +51,9 @@ Diseña el flujo funcional de la herramienta.
 Debe permitir:
 - Procesar una imagen concreta.
 - Procesar todas las imágenes de entrada.
+- Recortar cada imagen de data/src antes de llamar al modelo.
+- Guardar el recorte en data/dst con nombre trazable a la imagen original.
+- Analizar la imagen recortada y escribir la información del vinilo en el CSV.
 - Actualizar el CSV existente sin duplicar imágenes.
 - Machacar/regenerar el CSV desde cero.
 - Elegir proveedor de reconocimiento: LM Studio local o Gemini.
@@ -259,6 +265,7 @@ Estructura objetivo:
 - cmd/vinyl-quoter/main.go
 - internal/app
 - internal/catalog
+- internal/crop
 - internal/imageinput
 - internal/provider
 - internal/provider/gemini
@@ -274,6 +281,9 @@ Condiciones:
 - Las acciones posteriores deben reutilizar el CSV y modelo seleccionados en la sesión.
 - Mantén LM Studio como proveedor por defecto.
 - Mantén Gemini como opción.
+- Antes de reconocer, recorta cada imagen de data/src y guarda el resultado en data/dst.
+- El recognizer debe recibir la ruta de data/dst.
+- El CSV debe conservar como ID el nombre de la imagen original.
 - Ejecuta `go test ./...` dentro del Docker test mediante Makefile.
 - No añadas implementaciones en otros lenguajes.
 ```
@@ -296,6 +306,7 @@ README.md debe explicar de forma concisa:
 - Uso directo del CLI.
 - Uso mediante Make/Docker sin requerir Go instalado en host.
 - CSV generado.
+- Pipeline data/src → data/dst → modelo → CSV.
 - Política de datos y Git.
 - Troubleshooting básico.
 
@@ -379,7 +390,7 @@ Terminal con comandos verdes: go test ./..., make test, quality_gate.py.
 Overlay: "Evidencia antes de afirmar completado".
 
 57-60s:
-Diagrama final: data/src → VinylQuoter → data/report/album_catalog.csv.
+Diagrama final: data/src → data/dst → VinylQuoter → data/report/album_catalog.csv.
 Texto final: "IA útil = contexto + plan + fases + tests + verificación".
 
 Narración:
@@ -397,4 +408,4 @@ Narración:
 | 30-42s | Estructura Go | Separación de responsabilidades |
 | 42-50s | Docker test | Bind mounts y caché local |
 | 50-57s | Verificaciones | go test, make test, quality gate |
-| 57-60s | Flujo final | data/src → CSV |
+| 57-60s | Flujo final | data/src → data/dst → CSV |

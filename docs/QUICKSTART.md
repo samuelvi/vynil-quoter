@@ -16,6 +16,8 @@ data/src/
 
 Supported extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.dng`, `.heic`, `.heif`, `.tif`, `.tiff`.
 
+Processing pipeline: `data/src → data/dst → model → CSV`. JPEG and PNG images are cropped locally to isolate the vinyl/cover before model analysis. Other formats are copied to `data/dst` as a fallback.
+
 ## 2. Run without parameters: interactive menu
 
 ```bash
@@ -91,6 +93,7 @@ make run-cli ARGS="--all --provider lm-studio --model qwen2.5-vl-7b-instruct"
 Useful CLI flags:
 
 - `--src`: source image directory, default `data/src`.
+- `--dst`: cropped image directory, default `data/dst`.
 - `--report`: CSV path, default `data/report/album_catalog.csv`.
 - `--image`: one image path or file name from `data/src`.
 - `--all`: process all supported images in `data/src`.

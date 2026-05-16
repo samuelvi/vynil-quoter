@@ -9,9 +9,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 	"vinylquoter/internal/catalog"
 	"vinylquoter/internal/config"
+	"vinylquoter/internal/crop"
 	"vinylquoter/internal/imageinput"
 	"vinylquoter/internal/provider"
 	"vinylquoter/internal/provider/gemini"
@@ -23,6 +25,7 @@ func ParseArgs(args []string) (config.RunConfig, error) {
 	cfg := config.DefaultRunConfig()
 	set := flag.NewFlagSet("vinyl-quoter", flag.ContinueOnError)
 	set.StringVar(&cfg.SourceDir, "src", cfg.SourceDir, "source image directory")
+	set.StringVar(&cfg.DestinationDir, "dst", cfg.DestinationDir, "cropped image directory")
 	set.StringVar(&cfg.ReportPath, "report", cfg.ReportPath, "CSV report path")
 	set.StringVar(&cfg.Image, "image", "", "process one image path or filename from data/src")
 	set.BoolVar(&cfg.AllImages, "all", false, "process all supported images from data/src")
@@ -77,6 +80,7 @@ func runWithRecognizerFactory(ctx context.Context, cfg config.RunConfig, stdin i
 			continue
 		}
 		menuCfg.SourceDir = state.SourceDir
+		menuCfg.DestinationDir = state.DestinationDir
 		menuCfg.ReportPath = state.ReportPath
 		menuCfg.LMStudioBaseURL = state.LMStudioBaseURL
 		menuCfg.TimeoutSeconds = cfg.TimeoutSeconds
@@ -102,7 +106,7 @@ func runOnce(ctx context.Context, cfg config.RunConfig, stdout io.Writer, stderr
 	} else {
 		fmt.Fprintf(stdout, "Procesando imagen: %s\n", catalog.ImageID(images[0]))
 	}
-	rows, err := Process(ctx, images, cfg.ReportPath, cfg.Replace, recognizer)
+	rows, err := Process(ctx, images, cfg.ReportPath, cfg.Replace, cfg.DestinationDir, recognizer)
 	if err != nil {
 		fmt.Fprintln(stderr, "error:", err)
 		return 2
@@ -111,7 +115,7 @@ func runOnce(ctx context.Context, cfg config.RunConfig, stdout io.Writer, stderr
 	return 0
 }
 
-func Process(ctx context.Context, images []string, reportPath string, replace bool, recognizer provider.Recognizer) ([]catalog.Row, error) {
+func Process(ctx context.Context, images []string, reportPath string, replace bool, destinationDir string, recognizer provider.Recognizer) ([]catalog.Row, error) {
 	rows := []catalog.Row{}
 	if !replace {
 		existing, err := catalog.Read(reportPath)
@@ -125,9 +129,17 @@ func Process(ctx context.Context, images []string, reportPath string, replace bo
 		return nil, err
 	}
 	for _, image := range pending {
-		identification, err := recognizer.Identify(ctx, image)
+		cropResult, cropErr := crop.Process(image, destinationDir)
+		imageForRecognition := cropResult.CroppedPath
+		if cropErr != nil {
+			imageForRecognition = image
+		}
+		identification, err := recognizer.Identify(ctx, imageForRecognition)
 		if err != nil {
 			identification = catalog.Identification{Artist: "Unknown", Title: "Unknown", IdentificationConfidence: "manual-review", PriceConfidence: "manual-review", Notes: "identification failed: " + err.Error()}
+		}
+		if cropErr != nil {
+			identification.Notes = strings.TrimSpace(identification.Notes + " crop failed: " + cropErr.Error())
 		}
 		rows = append(rows, catalog.Row{SourceImage: catalog.ImageID(image), Artist: identification.Artist, Title: identification.Title, IdentificationConfidence: identification.IdentificationConfidence, RecommendedPriceEUR: identification.RecommendedPriceEUR, PriceConfidence: identification.PriceConfidence, PriceBasis: identification.PriceBasis, Notes: identification.Notes})
 		if err := catalog.Write(reportPath, rows); err != nil {
