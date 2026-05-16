@@ -1,0 +1,311 @@
+# Secuencia de prompts para generar VinylQuoter con IA
+
+Objetivo: mostrar cómo se podría haber generado este proyecto usando una IA de forma ordenada: primero comprensión y planificación, después ejecución por fases con pruebas, Docker, documentación y verificación.
+
+## Prompt 01 — Contexto y objetivo
+
+```text
+Actúa como agente builder. Quiero crear una herramienta CLI llamada VinylQuoter.
+
+Objetivo del producto:
+- Leer imágenes de portadas de vinilos.
+- Identificar a qué álbum corresponden.
+- Obtener artista/banda y título del álbum.
+- Generar una valoración conservadora en euros.
+- Exportar un CSV final con confianza, base de precio y notas.
+
+Antes de implementar:
+1. Inspecciona el repositorio.
+2. Detecta stack y herramientas disponibles.
+3. Resume objetivo, restricciones y criterios de aceptación.
+4. Propón un plan por fases.
+5. No escribas código hasta que apruebe el plan.
+```
+
+Resultado esperado:
+- La IA revisa contexto real del repositorio.
+- Define alcance.
+- Propone fases pequeñas y verificables.
+
+## Prompt 02 — Diseño funcional
+
+```text
+Diseña el flujo funcional de la herramienta.
+
+Debe permitir:
+- Procesar una imagen concreta.
+- Procesar todas las imágenes de entrada.
+- Actualizar el CSV existente sin duplicar imágenes.
+- Machacar/regenerar el CSV desde cero.
+- Elegir proveedor de reconocimiento: LM Studio local o Gemini.
+
+Entrega:
+- Opciones de enfoque con pros y contras.
+- Diseño recomendado.
+- Estructura inicial de responsabilidades.
+- Plan de pruebas.
+```
+
+Resultado esperado:
+- Menú CLI definido.
+- Política update/replace clara.
+- Proveedor local por defecto.
+
+## Prompt 03 — Plan técnico por fases
+
+```text
+Crea un plan técnico de implementación por fases.
+
+Condiciones:
+- Usa TDD siempre que sea posible.
+- Cada fase debe tener objetivo, archivos afectados, tests y verificación.
+- Separa responsabilidades en módulos pequeños.
+- Evita datos reales en Git.
+- Añade comandos Makefile para ejecutar y probar.
+
+No implementes todavía. Solo genera el plan.
+```
+
+Resultado esperado:
+- Plan por fases listo para ejecución.
+- Tests definidos antes del código.
+- Verificaciones explícitas.
+
+## Prompt 04 — Fase 1: prototipo CLI y CSV
+
+```text
+Ejecuta la fase 1 del plan.
+
+Implementa primero con tests:
+- Selección de una imagen.
+- Selección de todas las imágenes soportadas.
+- Escritura del CSV.
+- Lectura del CSV existente.
+- Modo actualizar.
+- Modo reemplazar.
+
+Después implementa el mínimo código necesario para pasar los tests.
+Reporta comandos ejecutados y resultados.
+```
+
+Resultado esperado:
+- Comportamiento base cubierto por tests.
+- CSV estable.
+- Evidencia de RED/GREEN.
+
+## Prompt 05 — Fase 2: proveedores de IA
+
+```text
+Ejecuta la fase 2 del plan.
+
+Añade proveedores de reconocimiento:
+- LM Studio local compatible con API OpenAI.
+- Gemini como fallback.
+
+Investiga los modelos locales disponibles y elige el mejor modelo de visión para imágenes.
+Usa ese modelo local por defecto.
+
+No imprimas secretos ni valores de variables de entorno.
+Añade tests unitarios sin llamadas reales de red.
+```
+
+Resultado esperado:
+- LM Studio por defecto.
+- Gemini opcional.
+- Modelo local recomendado documentado.
+- Providers testeables sin red.
+
+## Prompt 06 — Fase 3: estructura de datos y Git hygiene
+
+```text
+Ejecuta la fase 3 del plan.
+
+Mueve las carpetas de entrada/salida a:
+- data/src
+- data/dst
+- data/report
+
+Ignora el contenido real de data/ en Git, pero conserva las carpetas vacías mediante .gitkeep.
+
+Adapta rutas por defecto, tests, Makefile y documentación.
+Verifica que los datos reales se ignoran y los .gitkeep se versionan.
+```
+
+Resultado esperado:
+- Datos fuera del código.
+- `.gitignore` correcto.
+- Carpetas vacías presentes en Git.
+
+## Prompt 07 — Fase 4: Docker test
+
+```text
+Ejecuta la fase 4 del plan.
+
+Crea un Docker sencillo para entorno de test/desarrollo en:
+- docker/test/Dockerfile
+- docker/test/docker-compose.yml
+
+Requisitos:
+- Debe servir para ejecutar comandos Go.
+- Todos los volúmenes deben ser bind mounts explícitos.
+- Las cachés deben vivir bajo .cache/ dentro del proyecto.
+- Añade comandos Makefile:
+  - make test-build
+  - make test-up
+  - make test-down
+  - make test-shell
+  - make test
+
+Verifica Docker Compose config y tests dentro del contenedor.
+```
+
+Resultado esperado:
+- Entorno reproducible.
+- Volúmenes bind explícitos.
+- Tests ejecutándose dentro del contenedor.
+
+## Prompt 08 — Fase 5: migración completa a Go
+
+```text
+Migra completamente la implementación a Go.
+
+Estructura objetivo:
+- cmd/vinyl-quoter/main.go
+- internal/app
+- internal/catalog
+- internal/imageinput
+- internal/provider
+- internal/provider/gemini
+- internal/provider/lmstudio
+- internal/ui
+
+Condiciones:
+- Elimina la implementación Python cuando Go esté funcionando.
+- Mantén el menú interactivo y los flags equivalentes.
+- Mantén LM Studio como proveedor por defecto.
+- Mantén Gemini como opción.
+- Ejecuta go test ./... localmente y dentro del Docker test.
+```
+
+Resultado esperado:
+- Proyecto Go con responsabilidades separadas.
+- Python eliminado.
+- Tests Go verdes.
+
+## Prompt 09 — Fase 6: documentación
+
+```text
+Actualiza la documentación.
+
+README.md debe explicar de forma concisa:
+- Qué hace el proyecto.
+- Estructura de carpetas.
+- Requisitos.
+- Comandos Makefile.
+- Uso directo del CLI.
+- CSV generado.
+- Política de datos y Git.
+- Troubleshooting básico.
+
+Crea además docs/QUICKSTART.md con instrucciones rápidas de uso y enlázalo desde README.md.
+```
+
+Resultado esperado:
+- README útil sin ser extenso.
+- Guía rápida separada.
+- Enlace visible desde README.
+
+## Prompt 10 — Fase 7: verificación y cierre
+
+```text
+Ejecuta la verificación final antes de afirmar que el trabajo está terminado.
+
+Comandos mínimos:
+- go test ./...
+- docker compose -f docker/test/docker-compose.yml config
+- make test-build
+- make test-up
+- make test
+- make test-down
+- python3 .opencode/meta/hooks/quality_gate.py --workspace . --mode quick --strict
+- git status --short
+
+Si todo pasa, crea un commit Conventional Commit adecuado.
+Resume cambios, evidencia y riesgos restantes.
+```
+
+Resultado esperado:
+- Evidencia antes de declarar finalización.
+- Quality gate verde.
+- Commit claro.
+
+# Prompt para simular un vídeo de 1 minuto
+
+```text
+Crea un vídeo de unos 60 segundos estilo screen recording cinematográfico para explicar cómo se generó VinylQuoter con IA.
+
+Idioma: castellano.
+Estilo visual: editor de código + terminal + overlays tipo HUD.
+No muestres personas ficticias. Muestra pantallas, árbol de archivos, comandos y tests.
+
+Debe verse claramente:
+- Modelo usado: GPT-5.5.
+- Agente: Builder Workflow Agent.
+- Skills activadas: brainstorming, test-driven-development, writing-plans, executing-plans, verification-before-completion.
+- Uso de contexto: git status, README, Makefile, estructura del repo, Memory Bank.
+- Planificación antes de implementar.
+- Ejecución por fases.
+- Pruebas y quality gate antes de afirmar finalización.
+
+Guion temporal:
+
+0-5s:
+Título: "VinylQuoter: generado con IA por fases".
+Overlay: "Modelo: GPT-5.5 · Agente: Builder Workflow Agent".
+
+5-12s:
+Terminal mostrando inspección del repo: git status, README, Makefile.
+Overlay: "Contexto cargado: repo + docs + historial + Memory Bank".
+
+12-20s:
+Pantalla de planificación.
+Se ve una lista de fases: diseño, CLI, proveedores IA, data/, Docker, Go, docs, verificación.
+Overlay: "Skill: brainstorming + writing-plans".
+
+20-30s:
+Tests fallando primero en rojo y luego pasando en verde.
+Overlay: "TDD: primero prueba, luego implementación".
+
+30-42s:
+Editor mostrando estructura Go:
+cmd/vinyl-quoter, internal/app, internal/catalog, internal/imageinput, internal/provider, internal/ui.
+Overlay: "Responsabilidades separadas".
+
+42-50s:
+Docker Compose mostrando bind mounts y caché local .cache/.
+Overlay: "Docker test reproducible".
+
+50-57s:
+Terminal con comandos verdes: go test ./..., make test, quality_gate.py.
+Overlay: "Evidencia antes de afirmar completado".
+
+57-60s:
+Diagrama final: data/src → VinylQuoter → data/report/album_catalog.csv.
+Texto final: "IA útil = contexto + plan + fases + tests + verificación".
+
+Narración:
+"Este proyecto muestra una forma disciplinada de usar IA para construir software. Primero el agente entiende el contexto del repositorio y activa skills de planificación. Después transforma el objetivo en fases pequeñas: CLI, proveedores de IA, datos, Docker, migración a Go y documentación. Cada fase se valida con pruebas. El resultado no se declara terminado hasta ver tests, Docker y quality gate en verde. Así la IA no solo escribe código: trabaja con contexto, plan y evidencia."
+```
+
+# Storyboard resumido
+
+| Tiempo | Escena | Mensaje |
+| --- | --- | --- |
+| 0-5s | Título + HUD | Modelo y agente |
+| 5-12s | Terminal contexto | Repo, docs, Makefile, Memory Bank |
+| 12-20s | Plan por fases | Skills de planificación |
+| 20-30s | Tests RED/GREEN | TDD |
+| 30-42s | Estructura Go | Separación de responsabilidades |
+| 42-50s | Docker test | Bind mounts y caché local |
+| 50-57s | Verificaciones | go test, make test, quality gate |
+| 57-60s | Flujo final | data/src → CSV |

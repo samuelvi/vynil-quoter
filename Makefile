@@ -44,7 +44,7 @@ quality: test
 	python3 .opencode/meta/hooks/quality_gate.py --workspace . --mode quick --strict
 
 clean:
-	rm -rf __pycache__ src/__pycache__ tests/__pycache__ .DS_Store .cache/go-build
+	rm -rf __pycache__ .DS_Store .cache/go-build
 
 test-build:
 	docker compose -f $(TEST_COMPOSE) build
