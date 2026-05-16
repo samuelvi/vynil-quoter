@@ -95,9 +95,26 @@ Columns:
 
 Update mode keeps existing rows and skips images already present in the CSV. Replace mode regenerates the CSV from scratch.
 
+## AI demo video
+
+Generate a local one-minute demo video from `prompt.txt`:
+
+```bash
+make video-build
+make video-generate
+```
+
+Output:
+
+```text
+data/video/vinylquoter-ai-demo.mp4
+```
+
+The video is generated locally with `ffmpeg` in the `docker/video` container. Generated video files are ignored by Git.
+
 ## Data and Git
 
-`data/` is ignored except for `.gitkeep` placeholders in `data/src/`, `data/dst/`, and `data/report/`. Do not commit source images or generated reports.
+`data/` is ignored except for `.gitkeep` placeholders in `data/src/`, `data/dst/`, `data/report/`, and `data/video/`. Do not commit source images, generated reports, or generated videos.
 
 ## Troubleshooting
 

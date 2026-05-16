@@ -52,9 +52,35 @@ func TestDockerVolumesAreExplicitBindMounts(t *testing.T) {
 
 func TestGitignoreKeepsOnlyDataPlaceholders(t *testing.T) {
 	gitignore := read(t, ".gitignore")
-	for _, want := range []string{"data/*", "data/src/*", "!data/src/.gitkeep", "data/dst/*", "!data/dst/.gitkeep", "data/report/*", "!data/report/.gitkeep"} {
+	for _, want := range []string{"data/*", "data/src/*", "!data/src/.gitkeep", "data/dst/*", "!data/dst/.gitkeep", "data/report/*", "!data/report/.gitkeep", "!data/video/", "data/video/*", "!data/video/.gitkeep"} {
 		if !strings.Contains(gitignore, want) {
 			t.Fatalf(".gitignore missing %q", want)
+		}
+	}
+}
+
+func TestVideoGeneratorProjectFiles(t *testing.T) {
+	for _, path := range []string{"docker/video/Dockerfile", "docker/video/docker-compose.yml", "tools/video/generate_video.py", "data/video/.gitkeep"} {
+		if _, err := os.Stat(filepath.Join(root(t), path)); err != nil {
+			t.Fatalf("missing %s: %v", path, err)
+		}
+	}
+}
+
+func TestMakefileExposesVideoTargets(t *testing.T) {
+	makefile := read(t, "Makefile")
+	for _, want := range []string{"video-build:", "video-generate:", "video-shell:", "$(VIDEO_COMPOSE)", "$(VIDEO_SERVICE)"} {
+		if !strings.Contains(makefile, want) {
+			t.Fatalf("Makefile missing %q", want)
+		}
+	}
+}
+
+func TestReadmeDocumentsVideoOutput(t *testing.T) {
+	readme := read(t, "README.md")
+	for _, want := range []string{"AI demo video", "make video-build", "make video-generate", "data/video/vinylquoter-ai-demo.mp4"} {
+		if !strings.Contains(readme, want) {
+			t.Fatalf("README missing %q", want)
 		}
 	}
 }

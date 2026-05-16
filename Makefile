@@ -1,9 +1,11 @@
-.PHONY: help run run-all run-all-replace run-gemini test quality clean test-build test-up test-down test-shell opencode.init opencode.link opencode.verify opencode.open opencode.start
+.PHONY: help run run-all run-all-replace run-gemini test quality clean test-build test-up test-down test-shell video-build video-generate video-shell opencode.init opencode.link opencode.verify opencode.open opencode.start
 
 IMAGE ?=
 TEST_COMPOSE ?= docker/test/docker-compose.yml
 TEST_SERVICE ?= go-scripts
 TEST_RUN ?= docker compose -f $(TEST_COMPOSE) exec $(TEST_SERVICE)
+VIDEO_COMPOSE ?= docker/video/docker-compose.yml
+VIDEO_SERVICE ?= video-generator
 GO ?= go
 APP ?= ./cmd/vinyl-quoter
 
@@ -17,6 +19,9 @@ help:
 	@printf "  make test-up                 Start the Go scripts test container\n"
 	@printf "  make test-down               Stop the Go scripts test container\n"
 	@printf "  make test-shell              Open a shell in the Go scripts test container\n"
+	@printf "  make video-build             Build the local video generator image\n"
+	@printf "  make video-generate          Generate the local AI demo video\n"
+	@printf "  make video-shell             Open a shell in the video generator container\n"
 	@printf "  make test                    Run Go unit tests inside the test container\n"
 	@printf "  make quality                 Run tests and strict quick quality gate\n"
 	@printf "  make clean                   Remove local Python cache files\n"
@@ -57,6 +62,15 @@ test-down:
 
 test-shell:
 	docker compose -f $(TEST_COMPOSE) exec $(TEST_SERVICE) sh
+
+video-build:
+	docker compose -f $(VIDEO_COMPOSE) build
+
+video-generate:
+	docker compose -f $(VIDEO_COMPOSE) run --rm $(VIDEO_SERVICE) python tools/video/generate_video.py
+
+video-shell:
+	docker compose -f $(VIDEO_COMPOSE) run --rm $(VIDEO_SERVICE) bash
 
 opencode.init:
 	$(MAKE) -C opencode-bundle bundle-init-all

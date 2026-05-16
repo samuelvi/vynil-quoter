@@ -1,0 +1,11 @@
+services:
+  video-generator:
+    build:
+      context: ../..
+      dockerfile: docker/video/Dockerfile
+    working_dir: /workspace
+    volumes:
+      - type: bind
+        source: ../..
+        target: /workspace
+    command: bash
