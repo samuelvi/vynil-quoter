@@ -1,11 +1,19 @@
 # Secuencia de prompts para generar VinylQuoter con IA
 
-Objetivo: mostrar cómo se podría haber generado este proyecto usando una IA de forma ordenada: primero comprensión y planificación, después ejecución por fases con pruebas, Docker, documentación y verificación.
+Objetivo: mostrar cómo se podría haber generado este proyecto desde cero usando una IA de forma ordenada: primero comprensión y planificación, después ejecución por fases con Go, Docker de test, Makefile, documentación y verificación.
 
 ## Prompt 01 — Contexto y objetivo
 
 ```text
 Actúa como agente builder. Quiero crear una herramienta CLI llamada VinylQuoter.
+
+Parte de un proyecto vacío: no hay código previo, no hay estructura inicial y no debes asumir que existe ninguna implementación anterior.
+
+Stack obligatorio:
+- Lenguaje: Go desde el inicio.
+- Ejecución: todos los comandos de aplicación y test deben correr dentro de Docker.
+- Docker: configura un entorno de test en `docker/test`.
+- Makefile: encapsula los comandos necesarios para construir, levantar, probar, ejecutar y parar el entorno.
 
 Objetivo del producto:
 - Leer imágenes de portadas de vinilos.
@@ -15,16 +23,19 @@ Objetivo del producto:
 - Exportar un CSV final con confianza, base de precio y notas.
 
 Antes de implementar:
-1. Inspecciona el repositorio.
-2. Detecta stack y herramientas disponibles.
-3. Resume objetivo, restricciones y criterios de aceptación.
-4. Propón un plan por fases.
-5. No escribas código hasta que apruebe el plan.
+1. Asume que el repositorio está vacío salvo instrucciones de proyecto.
+2. Define la estructura Go inicial (`go.mod`, `cmd/`, `internal/`).
+3. Define el Docker de test en `docker/test`.
+4. Define los comandos Makefile que encapsulan Docker y Go.
+5. Resume objetivo, restricciones y criterios de aceptación.
+6. Propón un plan por fases.
+7. No escribas código hasta que apruebe el plan.
 ```
 
 Resultado esperado:
-- La IA revisa contexto real del repositorio.
-- Define alcance.
+- La IA entiende que el proyecto nace desde cero.
+- Define arquitectura Go idiomática.
+- Define Docker test y Makefile como base operativa.
 - Propone fases pequeñas y verificables.
 
 ## Prompt 02 — Diseño funcional
@@ -42,7 +53,9 @@ Debe permitir:
 Entrega:
 - Opciones de enfoque con pros y contras.
 - Diseño recomendado.
-- Estructura inicial de responsabilidades.
+- Estructura inicial de responsabilidades Go.
+- Diseño del Docker test en `docker/test`.
+- Lista de comandos Makefile propuestos.
 - Plan de pruebas.
 ```
 
@@ -61,7 +74,11 @@ Condiciones:
 - Cada fase debe tener objetivo, archivos afectados, tests y verificación.
 - Separa responsabilidades en módulos pequeños.
 - Evita datos reales en Git.
-- Añade comandos Makefile para ejecutar y probar.
+- Go es obligatorio desde la primera fase.
+- No propongas prototipos en Python ni migraciones posteriores.
+- Docker de test debe vivir en `docker/test`.
+- Todos los comandos Go deben ejecutarse dentro del Docker test.
+- Añade comandos Makefile para construir, levantar, ejecutar, probar y parar el contenedor.
 
 No implementes todavía. Solo genera el plan.
 ```
@@ -71,12 +88,50 @@ Resultado esperado:
 - Tests definidos antes del código.
 - Verificaciones explícitas.
 
-## Prompt 04 — Fase 1: prototipo CLI y CSV
+## Prompt 04 — Fase 1: base Go + Docker test + Makefile
 
 ```text
 Ejecuta la fase 1 del plan.
 
-Implementa primero con tests:
+Desde un repositorio vacío, crea la base del proyecto:
+- `go.mod`
+- `cmd/vinyl-quoter/main.go`
+- paquetes iniciales bajo `internal/`
+- Docker test en `docker/test/Dockerfile`
+- Compose en `docker/test/docker-compose.yml`
+- Makefile con comandos encapsulados.
+
+Comandos mínimos del Makefile:
+- make test-build
+- make test-up
+- make test-down
+- make test-shell
+- make test
+- make run
+
+Todos los comandos Go deben ejecutarse dentro del contenedor test.
+
+Implementa primero tests que verifiquen:
+- Existen los archivos base.
+- El Makefile usa Docker para ejecutar `go test ./...`.
+- El Compose usa bind mounts explícitos.
+
+Después implementa el mínimo código necesario para pasar los tests.
+Reporta comandos ejecutados y resultados.
+```
+
+Resultado esperado:
+- Proyecto Go inicial.
+- Docker test funcional en `docker/test`.
+- Makefile como única interfaz operativa.
+- Evidencia de RED/GREEN.
+
+## Prompt 05 — Fase 2: CLI y CSV en Go
+
+```text
+Ejecuta la fase 2 del plan.
+
+Implementa en Go, primero con tests:
 - Selección de una imagen.
 - Selección de todas las imágenes soportadas.
 - Escritura del CSV.
@@ -93,10 +148,10 @@ Resultado esperado:
 - CSV estable.
 - Evidencia de RED/GREEN.
 
-## Prompt 05 — Fase 2: proveedores de IA
+## Prompt 06 — Fase 3: proveedores de IA
 
 ```text
-Ejecuta la fase 2 del plan.
+Ejecuta la fase 3 del plan.
 
 Añade proveedores de reconocimiento:
 - LM Studio local compatible con API OpenAI.
@@ -107,6 +162,7 @@ Usa ese modelo local por defecto.
 
 No imprimas secretos ni valores de variables de entorno.
 Añade tests unitarios sin llamadas reales de red.
+Ejecuta los tests mediante Makefile dentro del Docker test.
 ```
 
 Resultado esperado:
@@ -115,10 +171,10 @@ Resultado esperado:
 - Modelo local recomendado documentado.
 - Providers testeables sin red.
 
-## Prompt 06 — Fase 3: estructura de datos y Git hygiene
+## Prompt 07 — Fase 4: estructura de datos y Git hygiene
 
 ```text
-Ejecuta la fase 3 del plan.
+Ejecuta la fase 4 del plan.
 
 Mueve las carpetas de entrada/salida a:
 - data/src
@@ -129,6 +185,7 @@ Ignora el contenido real de data/ en Git, pero conserva las carpetas vacías med
 
 Adapta rutas por defecto, tests, Makefile y documentación.
 Verifica que los datos reales se ignoran y los .gitkeep se versionan.
+Ejecuta la verificación desde el Docker test mediante Makefile.
 ```
 
 Resultado esperado:
@@ -136,12 +193,12 @@ Resultado esperado:
 - `.gitignore` correcto.
 - Carpetas vacías presentes en Git.
 
-## Prompt 07 — Fase 4: Docker test
+## Prompt 08 — Fase 5: endurecimiento del Docker test
 
 ```text
-Ejecuta la fase 4 del plan.
+Ejecuta la fase 5 del plan.
 
-Crea un Docker sencillo para entorno de test/desarrollo en:
+Revisa y endurece el Docker de test ya creado en:
 - docker/test/Dockerfile
 - docker/test/docker-compose.yml
 
@@ -149,12 +206,14 @@ Requisitos:
 - Debe servir para ejecutar comandos Go.
 - Todos los volúmenes deben ser bind mounts explícitos.
 - Las cachés deben vivir bajo .cache/ dentro del proyecto.
-- Añade comandos Makefile:
+- El Makefile debe mantener y documentar:
   - make test-build
   - make test-up
   - make test-down
   - make test-shell
   - make test
+  - make run
+  - make run-all
 
 Verifica Docker Compose config y tests dentro del contenedor.
 ```
@@ -164,10 +223,10 @@ Resultado esperado:
 - Volúmenes bind explícitos.
 - Tests ejecutándose dentro del contenedor.
 
-## Prompt 08 — Fase 5: migración completa a Go
+## Prompt 09 — Fase 6: arquitectura Go completa
 
 ```text
-Migra completamente la implementación a Go.
+Completa la arquitectura Go del proyecto.
 
 Estructura objetivo:
 - cmd/vinyl-quoter/main.go
@@ -180,19 +239,18 @@ Estructura objetivo:
 - internal/ui
 
 Condiciones:
-- Elimina la implementación Python cuando Go esté funcionando.
 - Mantén el menú interactivo y los flags equivalentes.
 - Mantén LM Studio como proveedor por defecto.
 - Mantén Gemini como opción.
-- Ejecuta go test ./... localmente y dentro del Docker test.
+- Ejecuta `go test ./...` dentro del Docker test mediante Makefile.
+- No añadas implementaciones en otros lenguajes.
 ```
 
 Resultado esperado:
 - Proyecto Go con responsabilidades separadas.
-- Python eliminado.
 - Tests Go verdes.
 
-## Prompt 09 — Fase 6: documentación
+## Prompt 10 — Fase 7: documentación
 
 ```text
 Actualiza la documentación.
@@ -202,6 +260,7 @@ README.md debe explicar de forma concisa:
 - Estructura de carpetas.
 - Requisitos.
 - Comandos Makefile.
+- Docker test en `docker/test`.
 - Uso directo del CLI.
 - CSV generado.
 - Política de datos y Git.
@@ -215,17 +274,17 @@ Resultado esperado:
 - Guía rápida separada.
 - Enlace visible desde README.
 
-## Prompt 10 — Fase 7: verificación y cierre
+## Prompt 11 — Fase 8: verificación y cierre
 
 ```text
 Ejecuta la verificación final antes de afirmar que el trabajo está terminado.
 
 Comandos mínimos:
-- go test ./...
 - docker compose -f docker/test/docker-compose.yml config
 - make test-build
 - make test-up
 - make test
+- make run --help
 - make test-down
 - python3 .opencode/meta/hooks/quality_gate.py --workspace . --mode quick --strict
 - git status --short
@@ -294,7 +353,7 @@ Diagrama final: data/src → VinylQuoter → data/report/album_catalog.csv.
 Texto final: "IA útil = contexto + plan + fases + tests + verificación".
 
 Narración:
-"Este proyecto muestra una forma disciplinada de usar IA para construir software. Primero el agente entiende el contexto del repositorio y activa skills de planificación. Después transforma el objetivo en fases pequeñas: CLI, proveedores de IA, datos, Docker, migración a Go y documentación. Cada fase se valida con pruebas. El resultado no se declara terminado hasta ver tests, Docker y quality gate en verde. Así la IA no solo escribe código: trabaja con contexto, plan y evidencia."
+"Este proyecto muestra una forma disciplinada de usar IA para construir software desde cero. Primero el agente entiende las restricciones: Go, Docker test y Makefile. Después transforma el objetivo en fases pequeñas: base Go, CLI, proveedores de IA, datos, Docker, documentación y verificación. Cada fase se valida con pruebas. El resultado no se declara terminado hasta ver tests, Docker y quality gate en verde. Así la IA no solo escribe código: trabaja con contexto, plan y evidencia."
 ```
 
 # Storyboard resumido
