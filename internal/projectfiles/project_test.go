@@ -81,23 +81,35 @@ func TestMakefileExposesDockerFirstAppTargets(t *testing.T) {
 	}
 }
 
+func TestMakefileAppTargetsAutoPrepareDocker(t *testing.T) {
+	makefile := read(t, "Makefile")
+	for _, want := range []string{"build: docker-build", "run: docker-build", "run-cli: docker-build", "run-all: docker-build", "run-all-replace: docker-build", "run-gemini: docker-build", "test: docker-build", "docker-shell: docker-build"} {
+		if !strings.Contains(makefile, want) {
+			t.Fatalf("Makefile target should prepare Docker first: missing %q", want)
+		}
+	}
+}
+
 func TestReadmeDocumentsCLIAndDevelopmentDocs(t *testing.T) {
 	readme := read(t, "README.md")
-	for _, want := range []string{"make build", "make run", "docs/QUICKSTART.md", "docs/DEVELOPMENT.md", "DSC01.jpg"} {
+	for _, want := range []string{"make build", "make run", "make run-cli", "docs/QUICKSTART.md", "docs/DEVELOPMENT.md", "DSC01.jpg", "No manual rebuild is needed for normal use", "Go recompiles changed code automatically inside Docker", "Guardado csv", "Modelo (<current provider: model>)"} {
 		if !strings.Contains(readme, want) {
 			t.Fatalf("README missing %q", want)
 		}
+	}
+	if strings.Contains(readme, "## Direct CLI usage inside the container") {
+		t.Fatal("README should document make run-cli instead of direct Go commands")
 	}
 }
 
 func TestQuickstartDocumentsInteractiveAndFlagUsage(t *testing.T) {
 	quickstart := read(t, "docs/QUICKSTART.md")
-	for _, want := range []string{"make docker-build", "make run", "interactive menu", "IMAGE=DSC01.jpg", "make run-all", "make run-all-replace", "make run-gemini", "make run-cli", "source_image"} {
+	for _, want := range []string{"make run", "Make prepares Docker automatically", "No manual rebuild is needed", "Go recompiles changed code automatically inside Docker", "interactive menu", "Guardado csv", "Modelo (<current provider: model>)", "IMAGE=DSC01.jpg", "make run-all", "make run-all-replace", "make run-gemini", "make run-cli", "source_image"} {
 		if !strings.Contains(quickstart, want) {
 			t.Fatalf("QUICKSTART missing %q", want)
 		}
 	}
-	for _, notWant := range []string{"go run ./cmd/vinyl-quoter", "bin/vinyl-quoter", "make test-build", "make test-up", "make test-down"} {
+	for _, notWant := range []string{"go run ./cmd/vinyl-quoter", "bin/vinyl-quoter", "make docker-build", "make test-build", "make test-up", "make test-down"} {
 		if strings.Contains(quickstart, notWant) {
 			t.Fatalf("QUICKSTART should not include host/development command %q", notWant)
 		}
@@ -106,9 +118,27 @@ func TestQuickstartDocumentsInteractiveAndFlagUsage(t *testing.T) {
 
 func TestDevelopmentDocDocumentsTestsAndDocker(t *testing.T) {
 	development := read(t, "docs/DEVELOPMENT.md")
-	for _, want := range []string{"make test-build", "make test-up", "make test", "make quality", "make test-down"} {
+	for _, want := range []string{"make docker-build", "make test-build", "make test-up", "make test", "make quality", "make test-down", "auto-build Docker image", "No manual rebuild is needed for `make run`", "Use `make build` only when you need a binary"} {
 		if !strings.Contains(development, want) {
 			t.Fatalf("DEVELOPMENT missing %q", want)
+		}
+	}
+}
+
+func TestMakefileHelpDocumentsAutoRecompile(t *testing.T) {
+	makefile := read(t, "Makefile")
+	for _, want := range []string{"auto-builds Docker", "recompiles changed Go code", "make build", "only when you need bin/vinyl-quoter"} {
+		if !strings.Contains(makefile, want) {
+			t.Fatalf("Makefile help missing %q", want)
+		}
+	}
+}
+
+func TestPromptDocumentsDockerAutoPreparation(t *testing.T) {
+	prompt := read(t, "prompt.txt")
+	for _, want := range []string{"make run debe preparar Docker automáticamente", "make test debe preparar Docker automáticamente", "Menú principal exacto", "Guardado csv (<ruta actual>)", "Modelo (<proveedor: modelo actual>)", "El submenú Guardado csv no debe preguntar por modelo"} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt.txt missing %q", want)
 		}
 	}
 }

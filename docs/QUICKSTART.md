@@ -2,6 +2,10 @@
 
 VinylQuoter runs from Docker so the host computer does not need Go installed. It identifies vinyl records from cover images and updates `data/report/album_catalog.csv`.
 
+Make prepares Docker automatically for user commands. You can run `make run` directly; it builds the Docker image if needed.
+
+No manual rebuild is needed for normal use. The app uses `go run` inside Docker, and Go recompiles changed code automatically inside Docker.
+
 ## 1. Add images
 
 Put cover images in:
@@ -12,19 +16,25 @@ data/src/
 
 Supported extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.dng`, `.heic`, `.heif`, `.tif`, `.tiff`.
 
-## 2. Build the Docker runtime
-
-```bash
-make docker-build
-```
-
-## 3. Run without parameters: interactive menu
+## 2. Run without parameters: interactive menu
 
 ```bash
 make run
 ```
 
-The interactive menu asks whether to process one image, all images in `data/src/`, update the CSV, regenerate the CSV, or exit. It also asks which recognition model to use:
+The interactive menu stays open after each action and exits only when you choose `Salir`.
+
+Main menu:
+
+1. Process one image.
+2. Process every supported image in `data/src`.
+3. Open `Guardado csv (<current CSV path>)`.
+4. Open `Modelo (<current provider: model>)`.
+5. Exit.
+
+The `Guardado csv` submenu lets you change the current CSV path, update the current CSV, regenerate it from scratch, or go back to the main menu. It does not ask for the recognition model.
+
+The `Modelo` menu lets you choose the recognition model once and keeps that selection for later actions:
 
 - LM Studio local `qwen2.5-vl-7b-instruct` — default.
 - LM Studio local `gemma-3-4b-it` — alternate local vision model if loaded in LM Studio.
@@ -36,7 +46,7 @@ When running in Docker, Make uses `http://host.docker.internal:1234/v1` for LM S
 make run LM_STUDIO_BASE_URL=http://host.docker.internal:1234/v1
 ```
 
-## 4. Run with parameters through Make
+## 3. Run with parameters through Make
 
 Process one image. This only creates or updates the CSV; it never replaces it:
 
@@ -45,7 +55,7 @@ make run IMAGE=DSC01.jpg
 make run IMAGE=data/src/DSC01.jpg
 ```
 
-Process every supported image in `data/src/` and append missing rows:
+Process every supported image in `data/src` and append missing rows:
 
 ```bash
 make run-all
@@ -70,7 +80,7 @@ make run-all MODEL=qwen2.5-vl-7b-instruct
 make run-all MODEL=gemma-3-4b-it
 ```
 
-## 5. Raw CLI flags through Make
+## 4. Raw CLI flags through Make
 
 If you need a flag not wrapped by the common Make commands, pass raw CLI flags through Docker with `ARGS`:
 
@@ -89,7 +99,7 @@ Useful CLI flags:
 - `--model`: model name override.
 - `--lm-studio-base-url`: LM Studio OpenAI-compatible base URL.
 
-## 6. Review the CSV
+## 5. Review the CSV
 
 Output path:
 

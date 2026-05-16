@@ -4,7 +4,7 @@ Use this guide for tests, Docker runtime, and quality checks. User-facing CLI us
 
 ## Docker app/test runtime
 
-Build the Docker image:
+Most Make targets auto-build Docker image dependencies before running. You can still build it explicitly:
 
 ```bash
 make docker-build
@@ -19,6 +19,8 @@ make run-all
 make run-all-replace
 make run-gemini
 ```
+
+No manual rebuild is needed for `make run`: it uses `go run` inside Docker, so Go recompiles changed code automatically. Use `make build` only when you need a binary at `bin/vinyl-quoter`.
 
 Open a shell:
 
@@ -37,7 +39,7 @@ Backward-compatible aliases remain available: `make test-build`, `make test-up`,
 
 ## Tests and quality
 
-Run Go tests inside the container:
+Run Go tests inside the container. `make test` auto-build Docker image dependencies before running:
 
 ```bash
 make test
@@ -49,22 +51,10 @@ Run tests plus the strict quick quality gate:
 make quality
 ```
 
-Run Go tests directly on the host:
-
-```bash
-go test ./...
-```
-
 ## Build
 
-Compile the shell executable:
+Compile the shell executable inside Docker:
 
 ```bash
 make build
-```
-
-Equivalent direct command:
-
-```bash
-go build -o bin/vinyl-quoter ./cmd/vinyl-quoter
 ```

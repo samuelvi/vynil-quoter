@@ -14,6 +14,8 @@ Stack obligatorio:
 - Ejecución: todos los comandos de aplicación y test deben correr dentro de Docker.
 - Docker: configura un entorno de test en `docker/test`.
 - Makefile: encapsula los comandos necesarios para construir, levantar, probar, ejecutar y parar el entorno.
+- `make run` debe preparar Docker automáticamente si la imagen no existe.
+- `make test` debe preparar Docker automáticamente antes de ejecutar los tests.
 
 Objetivo del producto:
 - Leer imágenes de portadas de vinilos.
@@ -50,6 +52,23 @@ Debe permitir:
 - Machacar/regenerar el CSV desde cero.
 - Elegir proveedor de reconocimiento: LM Studio local o Gemini.
 
+Menú principal exacto cuando se ejecuta sin flags:
+1. Procesar una imagen concreta.
+2. Procesar todas las imágenes de `data/src`.
+3. `Guardado csv (<ruta actual>)`.
+4. `Modelo (<proveedor: modelo actual>)`.
+5. Salir.
+
+Comportamiento del menú:
+- Debe permanecer abierto después de cada acción.
+- Solo debe salir cuando el usuario elige Salir.
+- `Guardado csv` debe mostrar la ruta actual entre paréntesis.
+- `Guardado csv` debe permitir cambiar ruta CSV, actualizar CSV, regenerar CSV o volver.
+- El submenú Guardado csv no debe preguntar por modelo.
+- `Modelo` debe mostrar el modelo actual entre paréntesis en el menú principal.
+- `Modelo` debe permitir elegir LM Studio por defecto, LM Studio alternativo o Gemini.
+- La selección de modelo y ruta CSV debe persistir durante la sesión interactiva.
+
 Entrega:
 - Opciones de enfoque con pros y contras.
 - Diseño recomendado.
@@ -78,6 +97,8 @@ Condiciones:
 - No propongas prototipos en Python ni migraciones posteriores.
 - Docker de test debe vivir en `docker/test`.
 - Todos los comandos Go deben ejecutarse dentro del Docker test.
+- make run debe preparar Docker automáticamente.
+- make test debe preparar Docker automáticamente.
 - Añade comandos Makefile para construir, levantar, ejecutar, probar y parar el contenedor.
 
 No implementes todavía. Solo genera el plan.
@@ -102,14 +123,15 @@ Desde un repositorio vacío, crea la base del proyecto:
 - Makefile con comandos encapsulados.
 
 Comandos mínimos del Makefile:
+- make docker-build
+- make run
+- make test
 - make test-build
 - make test-up
 - make test-down
 - make test-shell
-- make test
-- make run
 
-Todos los comandos Go deben ejecutarse dentro del contenedor test.
+Todos los comandos Go deben ejecutarse dentro del contenedor test. `make run` y `make test` deben preparar Docker automáticamente antes de ejecutar Go.
 
 Implementa primero tests que verifiquen:
 - Existen los archivos base.
@@ -207,6 +229,10 @@ Requisitos:
 - Todos los volúmenes deben ser bind mounts explícitos.
 - Las cachés deben vivir bajo .cache/ dentro del proyecto.
 - El Makefile debe mantener y documentar:
+  - make docker-build
+  - make docker-up
+  - make docker-down
+  - make docker-shell
   - make test-build
   - make test-up
   - make test-down
@@ -214,6 +240,7 @@ Requisitos:
   - make test
   - make run
   - make run-all
+- Los comandos de aplicación y test deben depender de `docker-build` para preparar Docker automáticamente.
 
 Verifica Docker Compose config y tests dentro del contenedor.
 ```
@@ -240,6 +267,11 @@ Estructura objetivo:
 
 Condiciones:
 - Mantén el menú interactivo y los flags equivalentes.
+- El menú interactivo debe permanecer abierto tras cada acción y solo salir con la opción Salir.
+- El menú principal debe mostrar `Guardado csv (<ruta actual>)`, modificable desde su submenú.
+- El submenú `Guardado csv` no debe preguntar por modelo.
+- El menú principal debe mostrar `Modelo (<proveedor: modelo actual>)` y permitir cambiarlo.
+- Las acciones posteriores deben reutilizar el CSV y modelo seleccionados en la sesión.
 - Mantén LM Studio como proveedor por defecto.
 - Mantén Gemini como opción.
 - Ejecuta `go test ./...` dentro del Docker test mediante Makefile.
@@ -262,6 +294,7 @@ README.md debe explicar de forma concisa:
 - Comandos Makefile.
 - Docker test en `docker/test`.
 - Uso directo del CLI.
+- Uso mediante Make/Docker sin requerir Go instalado en host.
 - CSV generado.
 - Política de datos y Git.
 - Troubleshooting básico.
@@ -281,11 +314,8 @@ Ejecuta la verificación final antes de afirmar que el trabajo está terminado.
 
 Comandos mínimos:
 - docker compose -f docker/test/docker-compose.yml config
-- make test-build
-- make test-up
-- make test
 - make run --help
-- make test-down
+- make test
 - python3 .opencode/meta/hooks/quality_gate.py --workspace . --mode quick --strict
 - git status --short
 

@@ -40,10 +40,10 @@ Supported image extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.dng`, `.heic`, `
 
 ## Makefile commands
 
-Build the Docker runtime before running app commands:
+App commands prepare Docker automatically. You can start with:
 
 ```bash
-make docker-build
+make run
 ```
 
 Common commands:
@@ -55,21 +55,35 @@ make run IMAGE=data/src/DSC01.jpg
 make run-all
 make run-all-replace
 make run-gemini
+make run-cli ARGS="--all --provider lm-studio"
 make test
 make quality
 make test-shell
 make test-down
 ```
 
-All app and Go test commands run inside Docker. Go caches are bind-mounted under the ignored project-local `.cache/` directory.
+All app and Go test commands run inside Docker and auto-build the runtime image when needed. No manual rebuild is needed for normal use: `go run` runs inside Docker and Go recompiles changed code automatically inside Docker. Go caches are bind-mounted under the ignored project-local `.cache/` directory.
 
-## Direct CLI usage inside the container
+## Interactive menu
+
+`make run` opens a persistent menu. It returns to the main menu after each action and exits only when you choose `Salir`.
+
+Main menu:
+
+1. Process one image.
+2. Process every supported image in `data/src`.
+3. Open `Guardado csv (<current CSV path>)`.
+4. Open `Modelo (<current provider: model>)`.
+5. Exit.
+
+`Guardado csv` lets you change the current CSV path, update the current CSV, regenerate it from scratch, or go back. It does not ask for the recognition model. `Modelo` changes the model once and keeps that selection for later actions.
+
+## Raw CLI flags through Make
+
+Use `make run-cli` for flags not wrapped by the common Make commands:
 
 ```bash
-go run ./cmd/vinyl-quoter --all
-go run ./cmd/vinyl-quoter --image data/src/DSC01.jpg
-go run ./cmd/vinyl-quoter --all --replace
-go run ./cmd/vinyl-quoter --all --provider gemini
+make run-cli ARGS="--all --provider lm-studio --model qwen2.5-vl-7b-instruct"
 ```
 
 Important flags:

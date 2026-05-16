@@ -15,8 +15,9 @@ MODEL_ARG := $(if $(MODEL),--model "$(MODEL)",)
 
 help:
 	@printf "VinylQuoter commands:\n"
+	@printf "  App commands auto-builds Docker and recompiles changed Go code as needed\n"
 	@printf "  make docker-build                 Build the Docker image used to run the app\n"
-	@printf "  make build                        Compile bin/vinyl-quoter inside Docker\n"
+	@printf "  make build                        Compile only when you need bin/vinyl-quoter\n"
 	@printf "  make run                          Run the interactive menu inside Docker\n"
 	@printf "  make run-cli ARGS='--all'         Run raw CLI flags inside Docker\n"
 	@printf "  make run IMAGE=DSC01.jpg          Process one image inside Docker\n"
@@ -29,29 +30,29 @@ help:
 	@printf "  make quality                 Run tests and strict quick quality gate\n"
 	@printf "  make clean                   Remove local Python cache files\n"
 
-build:
+build: docker-build
 	$(DOCKER_RUN) $(GO) build -o $(BIN) $(APP)
 
-run:
+run: docker-build
 	@if [ -z "$(IMAGE)" ]; then \
 		$(DOCKER_RUN) $(GO) run $(APP) --lm-studio-base-url "$(LM_STUDIO_BASE_URL)"; \
 	else \
 		$(DOCKER_RUN) $(GO) run $(APP) --lm-studio-base-url "$(LM_STUDIO_BASE_URL)" $(MODEL_ARG) --image "$(IMAGE)"; \
 	fi
 
-run-cli:
+run-cli: docker-build
 	$(DOCKER_RUN) $(GO) run $(APP) --lm-studio-base-url "$(LM_STUDIO_BASE_URL)" $(ARGS)
 
-run-all:
+run-all: docker-build
 	$(DOCKER_RUN) $(GO) run $(APP) --lm-studio-base-url "$(LM_STUDIO_BASE_URL)" $(MODEL_ARG) --all
 
-run-all-replace:
+run-all-replace: docker-build
 	$(DOCKER_RUN) $(GO) run $(APP) --lm-studio-base-url "$(LM_STUDIO_BASE_URL)" $(MODEL_ARG) --all --replace
 
-run-gemini:
+run-gemini: docker-build
 	$(DOCKER_RUN) $(GO) run $(APP) --all --provider gemini
 
-test:
+test: docker-build
 	$(DOCKER_RUN) $(GO) test ./...
 
 quality: test
@@ -69,7 +70,7 @@ docker-up:
 docker-down:
 	docker compose -f $(TEST_COMPOSE) down --remove-orphans
 
-docker-shell:
+docker-shell: docker-build
 	$(DOCKER_RUN) sh
 
 test-build: docker-build
