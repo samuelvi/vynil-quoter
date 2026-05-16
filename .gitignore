@@ -1,0 +1,24 @@
+# Local runtime/cache data
+.cache/
+__pycache__/
+*.py[cod]
+
+# Local IDE/workspace files
+.idea/
+.DS_Store
+
+# Local opencode/session state
+.mcrules*
+.mcprules*
+.opencode
+.opencode/
+.opencode.local
+.opencode.local/
+opencode-bundle/
+memory-bank/
+
+# Input/output data
+src/
+dst/
+report/
+reports/
