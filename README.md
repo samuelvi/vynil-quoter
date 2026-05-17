@@ -7,7 +7,7 @@ For the fastest path, read [docs/QUICKSTART.md](docs/QUICKSTART.md). For all pro
 ## What it does
 
 - Scans one image or every supported image in `data/src/`.
-- crops source images into `data/dst` to isolate the vinyl/cover from noisy backgrounds.
+- crops source images into `data/dst` as JPG files to isolate the vinyl/cover from noisy backgrounds.
 - Identifies album title and artist/band using LM Studio or Gemini; it analyzes the cropped image from `data/dst`.
 - Estimates a conservative EUR resale value.
 - Writes a CSV catalog with the image file name (for example `DSC01.jpg`) as the row identifier, plus confidence and review notes.
@@ -102,7 +102,7 @@ Important flags:
 
 Processing pipeline: `data/src → data/dst → model → CSV`.
 
-JPEG and PNG inputs are locally cropped before recognition. Unsupported decode formats are copied to `data/dst` as a fallback so the model can still inspect them.
+Decodable inputs are locally cropped and written as `.jpg` before recognition. Unsupported decode formats are copied to `data/dst` as a fallback so the model can still inspect them.
 
 Default path: `data/report/album_catalog.csv`.
 

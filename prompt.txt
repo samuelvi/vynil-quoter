@@ -20,7 +20,7 @@ Stack obligatorio:
 Objetivo del producto:
 - Leer imágenes de portadas de vinilos.
 - recortar localmente las imágenes decodificables de data/src para aislar el vinilo/portada frente a fondos u otros objetos.
-- guardar el recorte en data/dst; si un formato soportado no se puede decodificar localmente, copiarlo a data/dst como fallback.
+- guardar el recorte como JPG en data/dst; si un formato soportado no se puede decodificar localmente, copiarlo a data/dst como fallback.
 - analizar la imagen preparada desde data/dst, no la original de data/src.
 - Identificar a qué álbum corresponden.
 - Obtener artista/banda y título del álbum.
