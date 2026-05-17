@@ -1,4 +1,4 @@
-package visionpayload
+package visionpayload_test
 
 import (
 	"bytes"
@@ -10,10 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"vinylquoter/internal/provider/visionpayload"
 )
 
 func TestPromptDefinesStrictPricingJSONContract(t *testing.T) {
-	prompt := Prompt()
+	prompt := visionpayload.Prompt()
 	for _, want := range []string{"exact shape", "identification_confidence", "recommended_price_eur", "Spain/EU market", "media VG+", "Do not include markdown or commentary"} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q: %s", want, prompt)
@@ -23,7 +24,7 @@ func TestPromptDefinesStrictPricingJSONContract(t *testing.T) {
 
 func TestInlineImageReturnsDownscaledJPEGPreview(t *testing.T) {
 	path := writeJPEG(t, 2000, 1600)
-	mimeType, encoded, err := InlineImage(path)
+	mimeType, encoded, err := visionpayload.InlineImage(path)
 	if err != nil {
 		t.Fatal(err)
 	}

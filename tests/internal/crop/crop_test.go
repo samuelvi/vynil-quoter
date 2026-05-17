@@ -1,4 +1,4 @@
-package crop
+package crop_test
 
 import (
 	"image"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"vinylquoter/internal/crop"
 )
 
 func TestCropVinylWritesDominantObjectToDst(t *testing.T) {
@@ -15,7 +16,7 @@ func TestCropVinylWritesDominantObjectToDst(t *testing.T) {
 	dstDir := filepath.Join(tmp, "dst")
 	writeSyntheticVinylPhoto(t, src)
 
-	result, err := Process(src, dstDir)
+	result, err := crop.Process(src, dstDir)
 	if err != nil {
 		t.Fatal(err)
 	}

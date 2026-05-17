@@ -32,7 +32,7 @@ func Read(path string) ([]Row, error) {
 		for len(record) < len(Header) {
 			record = append(record, "")
 		}
-		rows = append(rows, Row{record[0], record[1], record[2], record[3], record[4], record[5], record[6], record[7]})
+		rows = append(rows, Row{record[0], record[1], record[2], record[3], record[4], record[5], record[6], record[7], record[8], record[9], record[10]})
 	}
 	return rows, nil
 }
@@ -51,7 +51,7 @@ func Write(path string, rows []Row) error {
 		return err
 	}
 	for _, row := range rows {
-		if err := writer.Write([]string{row.SourceImage, row.Artist, row.Title, row.IdentificationConfidence, row.RecommendedPriceEUR, row.PriceConfidence, row.PriceBasis, row.Notes}); err != nil {
+		if err := writer.Write([]string{row.SourceImage, row.Artist, row.Title, row.IdentificationConfidence, row.RecommendedPriceEUR, row.PriceConfidence, row.PriceBasis, row.Notes, row.DiscogsReferenceURL, row.EBayReferenceURL, row.PopsikeReferenceURL}); err != nil {
 			return err
 		}
 	}

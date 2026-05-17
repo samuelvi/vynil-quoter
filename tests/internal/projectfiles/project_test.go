@@ -1,4 +1,4 @@
-package projectfiles
+package projectfiles_test
 
 import (
 	"os"
@@ -92,7 +92,7 @@ func TestMakefileAppTargetsAutoPrepareDocker(t *testing.T) {
 
 func TestReadmeDocumentsCLIAndDevelopmentDocs(t *testing.T) {
 	readme := read(t, "README.md")
-	for _, want := range []string{"make build", "make run", "make run-cli", "docs/QUICKSTART.md", "docs/DEVELOPMENT.md", "DSC01.jpg", "No manual rebuild is needed for normal use", "Go recompiles changed code automatically inside Docker", "Guardado csv", "Modelo (<current provider: model>)", "crops source images into `data/dst`", "analyzes the cropped image"} {
+	for _, want := range []string{"make build", "make run", "make run-cli", "docs/QUICKSTART.md", "docs/DEVELOPMENT.md", "tests/", "DSC01.jpg", "No manual rebuild is needed for normal use", "Go recompiles changed code automatically inside Docker", "Guardado csv", "Modelo (<current provider: model>)", "crops source images into `data/dst`", "analyzes the cropped image", "discogs_reference_url", "ebay_reference_url", "popsike_reference_url"} {
 		if !strings.Contains(readme, want) {
 			t.Fatalf("README missing %q", want)
 		}
@@ -104,7 +104,7 @@ func TestReadmeDocumentsCLIAndDevelopmentDocs(t *testing.T) {
 
 func TestQuickstartDocumentsInteractiveAndFlagUsage(t *testing.T) {
 	quickstart := read(t, "docs/QUICKSTART.md")
-	for _, want := range []string{"make run", "Make prepares Docker automatically", "No manual rebuild is needed", "Go recompiles changed code automatically inside Docker", "interactive menu", "Guardado csv", "Modelo (<current provider: model>)", "IMAGE=DSC01.jpg", "make run-all", "make run-all-replace", "make run-gemini", "make run-cli", "source_image", "data/src → data/dst → model → CSV"} {
+	for _, want := range []string{"make run", "Make prepares Docker automatically", "No manual rebuild is needed", "Go recompiles changed code automatically inside Docker", "interactive menu", "Guardado csv", "Modelo (<current provider: model>)", "IMAGE=DSC01.jpg", "make run-all", "make run-all-replace", "make run-gemini", "make run-cli", "source_image", "discogs_reference_url", "ebay_reference_url", "popsike_reference_url", "data/src → data/dst → model → CSV"} {
 		if !strings.Contains(quickstart, want) {
 			t.Fatalf("QUICKSTART missing %q", want)
 		}
@@ -118,7 +118,7 @@ func TestQuickstartDocumentsInteractiveAndFlagUsage(t *testing.T) {
 
 func TestDevelopmentDocDocumentsTestsAndDocker(t *testing.T) {
 	development := read(t, "docs/DEVELOPMENT.md")
-	for _, want := range []string{"make docker-build", "make test-build", "make test-up", "make test", "make quality", "make test-down", "auto-build Docker image", "No manual rebuild is needed for `make run`", "Use `make build` only when you need a binary"} {
+	for _, want := range []string{"make docker-build", "make test-build", "make test-up", "make test", "make quality", "make test-down", "tests/", "mirrors implementation paths", "auto-build Docker image", "No manual rebuild is needed for `make run`", "Use `make build` only when you need a binary"} {
 		if !strings.Contains(development, want) {
 			t.Fatalf("DEVELOPMENT missing %q", want)
 		}

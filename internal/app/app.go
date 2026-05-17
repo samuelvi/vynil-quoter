@@ -60,6 +60,10 @@ func Run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer, 
 	return runWithRecognizerFactory(ctx, cfg, stdin, stdout, stderr, recognizerFor)
 }
 
+func RunWithRecognizerFactory(ctx context.Context, cfg config.RunConfig, stdin io.Reader, stdout io.Writer, stderr io.Writer, factory func(config.RunConfig) (provider.Recognizer, error)) int {
+	return runWithRecognizerFactory(ctx, cfg, stdin, stdout, stderr, factory)
+}
+
 func runWithRecognizerFactory(ctx context.Context, cfg config.RunConfig, stdin io.Reader, stdout io.Writer, stderr io.Writer, factory func(config.RunConfig) (provider.Recognizer, error)) int {
 	if cfg.Image != "" || cfg.AllImages {
 		return runOnce(ctx, cfg, stdout, stderr, factory)
@@ -137,7 +141,20 @@ func Process(ctx context.Context, images []string, reportPath string, replace bo
 		if cropErr != nil {
 			identification.Notes = strings.TrimSpace(identification.Notes + " crop failed: " + cropErr.Error())
 		}
-		row := catalog.Row{SourceImage: catalog.ImageID(image), Artist: identification.Artist, Title: identification.Title, IdentificationConfidence: identification.IdentificationConfidence, RecommendedPriceEUR: identification.RecommendedPriceEUR, PriceConfidence: identification.PriceConfidence, PriceBasis: identification.PriceBasis, Notes: identification.Notes}
+		referenceURLs := catalog.ReferenceURLs(identification.Artist, identification.Title)
+		row := catalog.Row{
+			SourceImage:              catalog.ImageID(image),
+			Artist:                   identification.Artist,
+			Title:                    identification.Title,
+			IdentificationConfidence: identification.IdentificationConfidence,
+			RecommendedPriceEUR:      identification.RecommendedPriceEUR,
+			PriceConfidence:          identification.PriceConfidence,
+			PriceBasis:               identification.PriceBasis,
+			Notes:                    identification.Notes,
+			DiscogsReferenceURL:      referenceURLs.Discogs,
+			EBayReferenceURL:         referenceURLs.EBay,
+			PopsikeReferenceURL:      referenceURLs.Popsike,
+		}
 		rows = catalog.Upsert(rows, row)
 		if err := catalog.Write(reportPath, rows); err != nil {
 			return nil, err

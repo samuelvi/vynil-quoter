@@ -1,4 +1,4 @@
-package gemini
+package gemini_test
 
 import (
 	"bytes"
@@ -14,11 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"vinylquoter/internal/provider/gemini"
 )
 
 func TestParseResponseExtractsIdentification(t *testing.T) {
 	body := []byte(`{"candidates":[{"content":{"parts":[{"text":"{\"artist\":\"The Cure\",\"title\":\"Disintegration\",\"identification_confidence\":\"high\",\"recommended_price_eur\":\"22\",\"price_confidence\":\"medium\",\"price_basis\":\"EU\",\"notes\":\"ok\"}"}]}}]}`)
-	got, err := ParseResponse(body)
+	got, err := gemini.ParseResponse(body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +29,7 @@ func TestParseResponseExtractsIdentification(t *testing.T) {
 }
 
 func TestParseResponseRejectsMissingText(t *testing.T) {
-	if _, err := ParseResponse([]byte(`{"candidates":[]}`)); err == nil {
+	if _, err := gemini.ParseResponse([]byte(`{"candidates":[]}`)); err == nil {
 		t.Fatal("expected error")
 	}
 }
@@ -36,7 +37,7 @@ func TestParseResponseRejectsMissingText(t *testing.T) {
 func TestIdentifySendsStrictPromptAndPreviewImage(t *testing.T) {
 	imagePath := writeGeminiJPEG(t, 2200, 1600)
 	transport := &captureTransport{t: t}
-	client := Client{APIKey: "test-key", Model: "test-model", HTTPClient: &http.Client{Transport: transport}}
+	client := gemini.Client{APIKey: "test-key", Model: "test-model", HTTPClient: &http.Client{Transport: transport}}
 
 	_, err := client.Identify(context.Background(), imagePath)
 	if err != nil {

@@ -43,6 +43,8 @@ Backward-compatible aliases remain available: `make test-build`, `make test-up`,
 
 Run Go tests inside the container. `make test` auto-build Docker image dependencies before running:
 
+Unit tests live under `tests/`. The `tests/` layout mirrors implementation paths. For example, tests for `internal/app/app.go` live at `tests/internal/app/app_test.go`.
+
 ```bash
 make test
 ```

@@ -113,3 +113,11 @@ data/report/album_catalog.csv
 ```
 
 The `source_image` column is the image ID and stores the file name, for example `DSC01.jpg`.
+
+Price reference columns:
+
+- `discogs_reference_url`
+- `ebay_reference_url`
+- `popsike_reference_url`
+
+These are generic external search links generated from artist/title plus `vinyl VG+ sleeve VG+`, a medium-high condition assumption for vinyl and sleeve.

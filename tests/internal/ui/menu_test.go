@@ -1,14 +1,15 @@
-package ui
+package ui_test
 
 import (
 	"bytes"
 	"strings"
 	"testing"
 	"vinylquoter/internal/config"
+	"vinylquoter/internal/ui"
 )
 
 func TestMenuChoiceFourMeansAllAndReplace(t *testing.T) {
-	cfg, err := ReadMenu(bytes.NewBufferString("3\n3\n"), &bytes.Buffer{})
+	cfg, err := ui.ReadMenu(bytes.NewBufferString("3\n3\n"), &bytes.Buffer{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -18,7 +19,7 @@ func TestMenuChoiceFourMeansAllAndReplace(t *testing.T) {
 }
 
 func TestMenuCSVUpdateSubmenuMeansAllWithoutReplace(t *testing.T) {
-	cfg, err := ReadMenu(bytes.NewBufferString("3\n2\n"), &bytes.Buffer{})
+	cfg, err := ui.ReadMenu(bytes.NewBufferString("3\n2\n"), &bytes.Buffer{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,15 +29,15 @@ func TestMenuCSVUpdateSubmenuMeansAllWithoutReplace(t *testing.T) {
 }
 
 func TestMenuCSVBackReturnsNoAction(t *testing.T) {
-	_, err := ReadMenu(bytes.NewBufferString("3\n4\n"), &bytes.Buffer{})
-	if err != ErrNoAction {
+	_, err := ui.ReadMenu(bytes.NewBufferString("3\n4\n"), &bytes.Buffer{})
+	if err != ui.ErrNoAction {
 		t.Fatalf("got %v", err)
 	}
 }
 
 func TestMenuCanSelectGeminiProvider(t *testing.T) {
-	cfg, err := ReadMenu(bytes.NewBufferString("4\n3\n"), &bytes.Buffer{})
-	if err != ErrNoAction {
+	cfg, err := ui.ReadMenu(bytes.NewBufferString("4\n3\n"), &bytes.Buffer{})
+	if err != ui.ErrNoAction {
 		t.Fatal(err)
 	}
 	if cfg.Provider != config.ProviderGemini || cfg.Model != config.DefaultGeminiModel {
@@ -45,7 +46,7 @@ func TestMenuCanSelectGeminiProvider(t *testing.T) {
 }
 
 func TestMenuDefaultProviderIsLocalVisionModel(t *testing.T) {
-	cfg, err := ReadMenu(bytes.NewBufferString("2\n"), &bytes.Buffer{})
+	cfg, err := ui.ReadMenu(bytes.NewBufferString("2\n"), &bytes.Buffer{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,8 +56,8 @@ func TestMenuDefaultProviderIsLocalVisionModel(t *testing.T) {
 }
 
 func TestMenuCanSelectAlternateLMStudioVisionModel(t *testing.T) {
-	cfg, err := ReadMenu(bytes.NewBufferString("4\n2\n"), &bytes.Buffer{})
-	if err != ErrNoAction {
+	cfg, err := ui.ReadMenu(bytes.NewBufferString("4\n2\n"), &bytes.Buffer{})
+	if err != ui.ErrNoAction {
 		t.Fatal(err)
 	}
 	if cfg.Provider != config.ProviderLMStudio || cfg.Model != config.AlternateLMStudioModel {
@@ -70,7 +71,7 @@ func TestMenuShowsCurrentCSVAndModelState(t *testing.T) {
 	state.ReportPath = "custom/report.csv"
 	state.Provider = config.ProviderGemini
 	state.Model = config.DefaultGeminiModel
-	_, _ = ReadMenuWithState(bytes.NewBufferString("5\n"), stdout, state)
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("5\n"), stdout, state)
 	output := stdout.String()
 	if !strings.Contains(output, "Guardado csv (custom/report.csv)") {
 		t.Fatalf("menu should show current CSV path, got %s", output)
@@ -81,8 +82,8 @@ func TestMenuShowsCurrentCSVAndModelState(t *testing.T) {
 }
 
 func TestMenuCanChangeCSVPathWithoutSelectingModel(t *testing.T) {
-	cfg, err := ReadMenuWithState(bytes.NewBufferString("3\n1\ncustom.csv\n"), &bytes.Buffer{}, config.DefaultRunConfig())
-	if err != ErrNoAction {
+	cfg, err := ui.ReadMenuWithState(bytes.NewBufferString("3\n1\ncustom.csv\n"), &bytes.Buffer{}, config.DefaultRunConfig())
+	if err != ui.ErrNoAction {
 		t.Fatalf("got %v", err)
 	}
 	if cfg.ReportPath != "custom.csv" {
@@ -91,8 +92,8 @@ func TestMenuCanChangeCSVPathWithoutSelectingModel(t *testing.T) {
 }
 
 func TestMenuCanChangeModelFromMainMenu(t *testing.T) {
-	cfg, err := ReadMenuWithState(bytes.NewBufferString("4\n3\n"), &bytes.Buffer{}, config.DefaultRunConfig())
-	if err != ErrNoAction {
+	cfg, err := ui.ReadMenuWithState(bytes.NewBufferString("4\n3\n"), &bytes.Buffer{}, config.DefaultRunConfig())
+	if err != ui.ErrNoAction {
 		t.Fatalf("got %v", err)
 	}
 	if cfg.Provider != config.ProviderGemini || cfg.Model != config.DefaultGeminiModel {

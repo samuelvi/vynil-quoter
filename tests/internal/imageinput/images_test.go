@@ -1,9 +1,10 @@
-package imageinput
+package imageinput_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+	"vinylquoter/internal/imageinput"
 )
 
 func TestCollectSingleImageUsesRequestedFile(t *testing.T) {
@@ -17,7 +18,7 @@ func TestCollectSingleImageUsesRequestedFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	items, err := Collect(src, image, false)
+	items, err := imageinput.Collect(src, image, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +39,7 @@ func TestCollectAllImagesUsesSupportedFilesSorted(t *testing.T) {
 		}
 	}
 
-	items, err := Collect(src, "", true)
+	items, err := imageinput.Collect(src, "", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,11 +51,11 @@ func TestCollectAllImagesUsesSupportedFilesSorted(t *testing.T) {
 
 func TestIsSupportedImage(t *testing.T) {
 	for _, path := range []string{"a.jpg", "a.jpeg", "a.png", "a.webp", "a.dng", "a.heic", "a.heif", "a.tif", "a.tiff"} {
-		if !IsSupportedImage(path) {
+		if !imageinput.IsSupportedImage(path) {
 			t.Fatalf("expected supported: %s", path)
 		}
 	}
-	if IsSupportedImage("notes.txt") {
+	if imageinput.IsSupportedImage("notes.txt") {
 		t.Fatal("txt should not be supported")
 	}
 }

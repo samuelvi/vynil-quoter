@@ -1,4 +1,4 @@
-package app
+package app_test
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"vinylquoter/internal/app"
 	"vinylquoter/internal/catalog"
 	"vinylquoter/internal/config"
 	"vinylquoter/internal/provider"
@@ -43,7 +44,7 @@ func writeTinyJPEG(t *testing.T, path string) {
 }
 
 func TestParseArgsDefaults(t *testing.T) {
-	cfg, err := ParseArgs([]string{"--all"})
+	cfg, err := app.ParseArgs([]string{"--all"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,12 +59,40 @@ func TestProcessWritesRows(t *testing.T) {
 	writeTinyJPEG(t, src)
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
 	dstDir := filepath.Join(tmp, "data", "dst")
-	rows, err := Process(context.Background(), []string{src}, report, false, dstDir, fakeRecognizer{})
+	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, fakeRecognizer{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(rows) != 1 || rows[0].Artist != "The Cure" {
 		t.Fatalf("got %#v", rows)
+	}
+}
+
+func TestProcessAddsPriceReferenceURLs(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "data", "src", "DSC01.jpg")
+	writeTinyJPEG(t, src)
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	dstDir := filepath.Join(tmp, "data", "dst")
+
+	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+		return catalog.Identification{Artist: "The Cure", Title: "Disintegration"}, nil
+	}))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("got %#v", rows)
+	}
+	for name, got := range map[string]string{
+		"discogs": rows[0].DiscogsReferenceURL,
+		"ebay":    rows[0].EBayReferenceURL,
+		"popsike": rows[0].PopsikeReferenceURL,
+	} {
+		if !strings.Contains(got, "The+Cure+Disintegration+vinyl+VG%2B+sleeve+VG%2B") {
+			t.Fatalf("%s URL missing expected query: %s", name, got)
+		}
 	}
 }
 
@@ -74,7 +103,7 @@ func TestProcessCropsSourceImageAndRecognizesDstImage(t *testing.T) {
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
 	dstDir := filepath.Join(tmp, "data", "dst")
 	var recognizedPath string
-	rows, err := Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
 		recognizedPath = imagePath
 		return catalog.Identification{Artist: "A", Title: "T"}, nil
 	}))
@@ -99,7 +128,7 @@ func TestProcessUsesImageBasenameAsCSVIdentifier(t *testing.T) {
 	writeTinyJPEG(t, src)
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
 	dstDir := filepath.Join(tmp, "data", "dst")
-	rows, err := Process(context.Background(), []string{src}, report, false, dstDir, fakeRecognizer{})
+	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, fakeRecognizer{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +155,7 @@ func TestProcessReprocessesExistingBasenameIdentifierAndUpdatesCSV(t *testing.T)
 	}
 	identifyCalls := 0
 
-	rows, err := Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
 		identifyCalls++
 		return catalog.Identification{Artist: "Fresh", Title: "New", IdentificationConfidence: "high"}, nil
 	}))
@@ -166,7 +195,7 @@ func TestProcessOverwritesDstImageWhenReprocessingExistingCSVRow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := Process(context.Background(), []string{src}, report, false, dstDir, fakeRecognizer{})
+	_, err := app.Process(context.Background(), []string{src}, report, false, dstDir, fakeRecognizer{})
 
 	if err != nil {
 		t.Fatal(err)
@@ -181,7 +210,7 @@ func TestProcessOverwritesDstImageWhenReprocessingExistingCSVRow(t *testing.T) {
 }
 
 func TestParseArgsSingleImageNeverReplacesCSV(t *testing.T) {
-	cfg, err := ParseArgs([]string{"--image", "DSC01.jpg", "--replace"})
+	cfg, err := app.ParseArgs([]string{"--image", "DSC01.jpg", "--replace"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +220,7 @@ func TestParseArgsSingleImageNeverReplacesCSV(t *testing.T) {
 }
 
 func TestParseArgsSupportsAlternateLMStudioVisionModel(t *testing.T) {
-	cfg, err := ParseArgs([]string{"--all", "--model", config.AlternateLMStudioModel})
+	cfg, err := app.ParseArgs([]string{"--all", "--model", config.AlternateLMStudioModel})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +247,7 @@ func TestRunInteractiveReturnsToMenuUntilExit(t *testing.T) {
 	cfg.SourceDir = src
 	cfg.ReportPath = report
 	cfg.DestinationDir = filepath.Join(tmp, "data", "dst")
-	code := runWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
+	code := app.RunWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
 		return fakeRecognizer{}, nil
 	})
 	if code != 0 {
@@ -247,7 +276,7 @@ func TestRunInteractivePersistsSelectedModelAndCSV(t *testing.T) {
 	cfg.SourceDir = src
 	cfg.DestinationDir = filepath.Join(tmp, "data", "dst")
 	var seen []config.RunConfig
-	code := runWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(cfg config.RunConfig) (provider.Recognizer, error) {
+	code := app.RunWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(cfg config.RunConfig) (provider.Recognizer, error) {
 		seen = append(seen, cfg)
 		return fakeRecognizer{}, nil
 	})
@@ -282,7 +311,7 @@ func TestRunInteractiveOptionTwoProcessesAllImages(t *testing.T) {
 	cfg.ReportPath = report
 	cfg.DestinationDir = filepath.Join(tmp, "data", "dst")
 	var seen []string
-	code := runWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
+	code := app.RunWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
 		return recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
 			seen = append(seen, filepath.Base(imagePath))
 			return catalog.Identification{Artist: "A", Title: "T"}, nil
@@ -319,7 +348,7 @@ func TestRunInteractiveResetsActionModeAfterOptionTwo(t *testing.T) {
 	cfg.ReportPath = report
 	cfg.DestinationDir = filepath.Join(tmp, "data", "dst")
 	var seen []string
-	code := runWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
+	code := app.RunWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
 		return recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
 			seen = append(seen, filepath.Base(imagePath))
 			return catalog.Identification{Artist: "A", Title: "T"}, nil

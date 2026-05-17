@@ -2,7 +2,7 @@
 
 VinylQuoter identifies vinyl records from cover images in `data/src/` and writes a valuation catalog to `data/report/album_catalog.csv`.
 
-For the fastest path, read [docs/QUICKSTART.md](docs/QUICKSTART.md). For all project documentation, use [docs/index.md](docs/index.md).
+For the fastest path, read [docs/QUICKSTART.md](docs/QUICKSTART.md). For all project documentation, including active implementation plans, use [docs/index.md](docs/index.md).
 
 ## What it does
 
@@ -28,6 +28,7 @@ data/src/                input images (ignored except .gitkeep)
 data/dst/                cropped images generated from data/src
 data/report/             CSV output (ignored except .gitkeep)
 docker/test/             Go test/runtime container
+tests/                   unit tests mirroring implementation paths
 docs/QUICKSTART.md       user usage guide
 docs/DEVELOPMENT.md      development, Docker, and test guide
 ```
@@ -115,8 +116,13 @@ Columns:
 - `price_confidence`
 - `price_basis`
 - `notes`
+- `discogs_reference_url`
+- `ebay_reference_url`
+- `popsike_reference_url`
 
 Normal processing reprocesses the selected source images every time, overwrites their prepared files in `data/dst`, and upserts CSV rows by `source_image`. Rows for images not selected in the current run are preserved. Replace mode regenerates the CSV from scratch only for all-images runs; single-image CLI runs always update/create the CSV and never replace it.
+
+Reference URL columns are generic Discogs, eBay, and Popsike search links generated from artist/title with `vinyl VG+ sleeve VG+` medium-high quality assumptions.
 
 ## Data and Git
 

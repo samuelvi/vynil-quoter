@@ -1,4 +1,4 @@
-package lmstudio
+package lmstudio_test
 
 import (
 	"bytes"
@@ -14,11 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"vinylquoter/internal/provider/lmstudio"
 )
 
 func TestParseResponseExtractsIdentification(t *testing.T) {
 	body := []byte(`{"choices":[{"message":{"content":"{\"artist\":\"The Cure\",\"title\":\"Disintegration\",\"identification_confidence\":\"high\",\"recommended_price_eur\":\"22\",\"price_confidence\":\"medium\",\"price_basis\":\"EU\",\"notes\":\"ok\"}"}}]}`)
-	got, err := ParseResponse(body)
+	got, err := lmstudio.ParseResponse(body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +29,7 @@ func TestParseResponseExtractsIdentification(t *testing.T) {
 }
 
 func TestParseResponseRejectsMissingChoice(t *testing.T) {
-	if _, err := ParseResponse([]byte(`{"choices":[]}`)); err == nil {
+	if _, err := lmstudio.ParseResponse([]byte(`{"choices":[]}`)); err == nil {
 		t.Fatal("expected error")
 	}
 }
@@ -64,7 +65,7 @@ func TestIdentifySendsModelFriendlyPromptAndPreviewImage(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := Client{BaseURL: server.URL, Model: "test", HTTPClient: server.Client()}.Identify(context.Background(), imagePath)
+	_, err := lmstudio.Client{BaseURL: server.URL, Model: "test", HTTPClient: server.Client()}.Identify(context.Background(), imagePath)
 	if err != nil {
 		t.Fatal(err)
 	}

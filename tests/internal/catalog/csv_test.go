@@ -1,0 +1,122 @@
+package catalog_test
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"vinylquoter/internal/catalog"
+)
+
+func TestWriteAndReadRows(t *testing.T) {
+	tmp := t.TempDir()
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	existing := catalog.Row{SourceImage: "data/src/a.jpg", Artist: "Artist A", Title: "Title A", IdentificationConfidence: "high", RecommendedPriceEUR: "12", PriceConfidence: "medium", PriceBasis: "existing"}
+	if err := catalog.Write(report, []catalog.Row{existing}); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := catalog.Read(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].Artist != "Artist A" {
+		t.Fatalf("got %#v", rows)
+	}
+}
+
+func TestUpsertReplacesExistingRowByImageID(t *testing.T) {
+	rows := []catalog.Row{{SourceImage: "data/src/DSC01.jpg", Artist: "Old", Title: "Old Title"}}
+	fresh := catalog.Row{SourceImage: "DSC01.jpg", Artist: "Fresh", Title: "Fresh Title"}
+
+	updated := catalog.Upsert(rows, fresh)
+
+	if len(updated) != 1 {
+		t.Fatalf("upsert should replace instead of append, got %#v", updated)
+	}
+	if updated[0].SourceImage != "DSC01.jpg" || updated[0].Artist != "Fresh" || updated[0].Title != "Fresh Title" {
+		t.Fatalf("got %#v", updated[0])
+	}
+}
+
+func TestUpsertAppendsMissingRowAndPreservesExistingOrder(t *testing.T) {
+	rows := []catalog.Row{{SourceImage: "DSC01.jpg", Artist: "Artist 1"}}
+	fresh := catalog.Row{SourceImage: "DSC02.jpg", Artist: "Artist 2"}
+
+	updated := catalog.Upsert(rows, fresh)
+
+	if len(updated) != 2 {
+		t.Fatalf("got %#v", updated)
+	}
+	if updated[0].SourceImage != "DSC01.jpg" || updated[1].SourceImage != "DSC02.jpg" {
+		t.Fatalf("upsert should preserve existing order and append new rows, got %#v", updated)
+	}
+}
+
+func TestReferenceURLsUseArtistTitleAndConditionHint(t *testing.T) {
+	refs := catalog.ReferenceURLs("The Cure", "Disintegration")
+
+	for name, got := range map[string]string{
+		"discogs": refs.Discogs,
+		"ebay":    refs.EBay,
+		"popsike": refs.Popsike,
+	} {
+		if !strings.Contains(got, "The+Cure+Disintegration+vinyl+VG%2B+sleeve+VG%2B") {
+			t.Fatalf("%s URL missing encoded pricing query: %s", name, got)
+		}
+	}
+	if !strings.HasPrefix(refs.Discogs, "https://www.discogs.com/search/") {
+		t.Fatalf("unexpected Discogs URL: %s", refs.Discogs)
+	}
+	if !strings.HasPrefix(refs.EBay, "https://www.ebay.es/sch/i.html") {
+		t.Fatalf("unexpected eBay URL: %s", refs.EBay)
+	}
+	if !strings.HasPrefix(refs.Popsike, "https://www.popsike.com/php/quicksearch.php") {
+		t.Fatalf("unexpected Popsike URL: %s", refs.Popsike)
+	}
+}
+
+func TestWriteReadRowsIncludesReferenceURLColumns(t *testing.T) {
+	tmp := t.TempDir()
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	row := catalog.Row{SourceImage: "DSC01.jpg", Artist: "The Cure", Title: "Disintegration", DiscogsReferenceURL: "https://discogs.example", EBayReferenceURL: "https://ebay.example", PopsikeReferenceURL: "https://popsike.example"}
+
+	if err := catalog.Write(report, []catalog.Row{row}); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"discogs_reference_url", "ebay_reference_url", "popsike_reference_url"} {
+		if !strings.Contains(string(content), want) {
+			t.Fatalf("CSV header missing %s: %s", want, string(content))
+		}
+	}
+	rows, err := catalog.Read(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].DiscogsReferenceURL != row.DiscogsReferenceURL || rows[0].EBayReferenceURL != row.EBayReferenceURL || rows[0].PopsikeReferenceURL != row.PopsikeReferenceURL {
+		t.Fatalf("got %#v", rows)
+	}
+}
+
+func TestReadOldEightColumnCSVKeepsEmptyReferenceURLs(t *testing.T) {
+	tmp := t.TempDir()
+	report := filepath.Join(tmp, "album_catalog.csv")
+	oldCSV := "source_image,artist,title,identification_confidence,recommended_price_eur,price_confidence,price_basis,notes\nDSC01.jpg,The Cure,Disintegration,high,22,medium,basis,notes\n"
+	if err := os.WriteFile(report, []byte(oldCSV), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := catalog.Read(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("got %#v", rows)
+	}
+	if rows[0].DiscogsReferenceURL != "" || rows[0].EBayReferenceURL != "" || rows[0].PopsikeReferenceURL != "" {
+		t.Fatalf("old CSV rows should have empty reference URLs, got %#v", rows[0])
+	}
+}
