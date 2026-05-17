@@ -3,17 +3,14 @@ package gemini
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 	"vinylquoter/internal/catalog"
 	"vinylquoter/internal/provider/jsonparse"
+	"vinylquoter/internal/provider/visionpayload"
 )
 
 type Client struct {
@@ -24,16 +21,11 @@ type Client struct {
 }
 
 func (c Client) Identify(ctx context.Context, imagePath string) (catalog.Identification, error) {
-	data, err := os.ReadFile(imagePath)
+	mimeType, encodedImage, err := visionpayload.InlineImage(imagePath)
 	if err != nil {
 		return catalog.Identification{}, err
 	}
-	mimeType := mime.TypeByExtension(filepath.Ext(imagePath))
-	if mimeType == "" {
-		mimeType = "image/jpeg"
-	}
-	prompt := "Identify the vinyl album from this image and estimate a conservative second-hand EUR price. Return only JSON with artist,title,identification_confidence,recommended_price_eur,price_confidence,price_basis,notes."
-	payload := map[string]any{"contents": []any{map[string]any{"parts": []any{map[string]string{"text": prompt}, map[string]any{"inline_data": map[string]string{"mime_type": mimeType, "data": base64.StdEncoding.EncodeToString(data)}}}}}, "generationConfig": map[string]any{"temperature": 0, "responseMimeType": "application/json"}}
+	payload := map[string]any{"contents": []any{map[string]any{"parts": []any{map[string]string{"text": visionpayload.Prompt()}, map[string]any{"inline_data": map[string]string{"mime_type": mimeType, "data": encodedImage}}}}}, "generationConfig": map[string]any{"temperature": 0, "responseMimeType": "application/json"}}
 	body, _ := json.Marshal(payload)
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", c.Model, c.APIKey)
 	client := c.HTTPClient

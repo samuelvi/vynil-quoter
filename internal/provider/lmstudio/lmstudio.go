@@ -3,18 +3,15 @@ package lmstudio
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 	"vinylquoter/internal/catalog"
 	"vinylquoter/internal/provider/jsonparse"
+	"vinylquoter/internal/provider/visionpayload"
 )
 
 type Client struct {
@@ -24,16 +21,11 @@ type Client struct {
 }
 
 func (c Client) Identify(ctx context.Context, imagePath string) (catalog.Identification, error) {
-	data, err := os.ReadFile(imagePath)
+	imageURL, err := visionpayload.DataURL(imagePath)
 	if err != nil {
 		return catalog.Identification{}, err
 	}
-	mimeType := mime.TypeByExtension(filepath.Ext(imagePath))
-	if mimeType == "" {
-		mimeType = "image/jpeg"
-	}
-	prompt := "Identify the vinyl album from this image and estimate a conservative second-hand EUR price. Return only JSON with artist,title,identification_confidence,recommended_price_eur,price_confidence,price_basis,notes."
-	payload := map[string]any{"model": c.Model, "temperature": 0, "messages": []any{map[string]any{"role": "user", "content": []any{map[string]string{"type": "text", "text": prompt}, map[string]any{"type": "image_url", "image_url": map[string]string{"url": "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(data)}}}}}}
+	payload := map[string]any{"model": c.Model, "temperature": 0, "messages": []any{map[string]any{"role": "user", "content": []any{map[string]string{"type": "text", "text": visionpayload.Prompt()}, map[string]any{"type": "image_url", "image_url": map[string]string{"url": imageURL}}}}}}
 	body, _ := json.Marshal(payload)
 	baseURL := strings.TrimRight(c.BaseURL, "/")
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/chat/completions", bytes.NewReader(body))
