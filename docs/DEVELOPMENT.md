@@ -2,7 +2,7 @@
 
 Use this guide for tests, Docker runtime, and quality checks. User-facing CLI usage lives in `docs/QUICKSTART.md`.
 
-The app pipeline is `data/src → data/dst → model → CSV`: source photos are cropped locally first, cropped files are saved in `data/dst`, and only the cropped image is sent to the recognizer.
+The app pipeline is `data/src → data/dst → model → CSV`: source photos are cropped locally first, decodable crops are saved as `.jpg` files in `data/dst`, and only the prepared image is sent to the recognizer.
 
 ## Docker app/test runtime
 

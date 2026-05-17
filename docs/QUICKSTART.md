@@ -16,7 +16,7 @@ data/src/
 
 Supported extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.dng`, `.heic`, `.heif`, `.tif`, `.tiff`.
 
-Processing pipeline: `data/src → data/dst → model → CSV`. JPEG and PNG images are cropped locally to isolate the vinyl/cover before model analysis. Other formats are copied to `data/dst` as a fallback.
+Processing pipeline: `data/src → data/dst → model → CSV`. Decodable images are cropped locally, written as `.jpg`, and used for model analysis. Unsupported decode formats are copied to `data/dst` as a fallback.
 
 ## 2. Run without parameters: interactive menu
 

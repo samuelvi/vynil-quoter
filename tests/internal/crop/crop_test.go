@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
@@ -43,6 +44,84 @@ func TestCropVinylWritesDominantObjectToDst(t *testing.T) {
 	}
 }
 
+func TestCropIgnoresSparseNoisyBorderPixels(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "src", "noisy-border.jpg")
+	dstDir := filepath.Join(tmp, "dst")
+	writeNoisyBorderVinylPhoto(t, src)
+
+	result, err := crop.Process(src, dstDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cropped := decodeJPEG(t, result.CroppedPath)
+	bounds := cropped.Bounds()
+	if bounds.Dx() >= 320 || bounds.Dy() >= 320 {
+		t.Fatalf("expected crop to ignore sparse border noise and trim source, got %dx%d", bounds.Dx(), bounds.Dy())
+	}
+	if bounds.Dx() < 150 || bounds.Dy() < 150 {
+		t.Fatalf("expected crop to retain vinyl object, got %dx%d", bounds.Dx(), bounds.Dy())
+	}
+}
+
+func TestCropIgnoresConnectedNoisyFrame(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "src", "noisy-frame.jpg")
+	dstDir := filepath.Join(tmp, "dst")
+	writeNoisyFrameVinylPhoto(t, src)
+
+	result, err := crop.Process(src, dstDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cropped := decodeJPEG(t, result.CroppedPath)
+	bounds := cropped.Bounds()
+	if bounds.Dx() >= 320 || bounds.Dy() >= 320 {
+		t.Fatalf("expected crop to ignore connected border frame and trim source, got %dx%d", bounds.Dx(), bounds.Dy())
+	}
+	if bounds.Dx() < 150 || bounds.Dy() < 150 {
+		t.Fatalf("expected crop to retain vinyl object, got %dx%d", bounds.Dx(), bounds.Dy())
+	}
+}
+
+func TestCropWritesJPGForDecodedSourceRegardlessOfExtension(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "src", "IMG_6658.DNG")
+	dstDir := filepath.Join(tmp, "dst")
+	writeSyntheticVinylPhoto(t, src)
+
+	result, err := crop.Process(src, dstDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := filepath.Join(dstDir, "IMG_6658.jpg")
+	if result.CroppedPath != expected {
+		t.Fatalf("expected decoded sources to be written as JPG at %s, got %s", expected, result.CroppedPath)
+	}
+	decodeJPEG(t, result.CroppedPath)
+}
+
+func TestCropWritesJPGForPNGSource(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "src", "cover.png")
+	dstDir := filepath.Join(tmp, "dst")
+	writeSyntheticVinylPNG(t, src)
+
+	result, err := crop.Process(src, dstDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := filepath.Join(dstDir, "cover.jpg")
+	if result.CroppedPath != expected {
+		t.Fatalf("expected PNG source to be written as JPG at %s, got %s", expected, result.CroppedPath)
+	}
+	decodeJPEG(t, result.CroppedPath)
+}
+
 func writeSyntheticVinylPhoto(t *testing.T, path string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -65,6 +144,100 @@ func writeSyntheticVinylPhoto(t *testing.T, path string) {
 	}
 	defer file.Close()
 	if err := jpeg.Encode(file, img, &jpeg.Options{Quality: 95}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeNoisyBorderVinylPhoto(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 400, 400))
+	for y := 0; y < 400; y++ {
+		for x := 0; x < 400; x++ {
+			img.Set(x, y, color.RGBA{R: 225, G: 224, B: 216, A: 255})
+		}
+	}
+	for y := 120; y < 280; y++ {
+		for x := 110; x < 270; x++ {
+			img.Set(x, y, color.RGBA{R: 25, G: 28, B: 36, A: 255})
+		}
+	}
+	for x := 0; x < 400; x += 5 {
+		img.Set(x, 0, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+		img.Set(x, 399, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+	}
+	for y := 0; y < 400; y += 5 {
+		img.Set(0, y, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+		img.Set(399, y, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if err := jpeg.Encode(file, img, &jpeg.Options{Quality: 95}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeNoisyFrameVinylPhoto(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 400, 400))
+	for y := 0; y < 400; y++ {
+		for x := 0; x < 400; x++ {
+			img.Set(x, y, color.RGBA{R: 225, G: 224, B: 216, A: 255})
+		}
+	}
+	for y := 120; y < 280; y++ {
+		for x := 110; x < 270; x++ {
+			img.Set(x, y, color.RGBA{R: 25, G: 28, B: 36, A: 255})
+		}
+	}
+	for y := 0; y < 400; y++ {
+		img.Set(0, y, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+		img.Set(399, y, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+	}
+	for x := 0; x < 400; x++ {
+		img.Set(x, 0, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+		img.Set(x, 399, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if err := jpeg.Encode(file, img, &jpeg.Options{Quality: 95}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeSyntheticVinylPNG(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 300, 300))
+	for y := 0; y < 300; y++ {
+		for x := 0; x < 300; x++ {
+			img.Set(x, y, color.RGBA{R: 230, G: 230, B: 220, A: 255})
+		}
+	}
+	for y := 82; y < 222; y++ {
+		for x := 92; x < 232; x++ {
+			img.Set(x, y, color.RGBA{R: 20, G: 30, B: 45, A: 255})
+		}
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if err := png.Encode(file, img); err != nil {
 		t.Fatal(err)
 	}
 }
