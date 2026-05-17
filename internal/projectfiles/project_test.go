@@ -136,7 +136,7 @@ func TestMakefileHelpDocumentsAutoRecompile(t *testing.T) {
 
 func TestPromptDocumentsDockerAutoPreparation(t *testing.T) {
 	prompt := read(t, "prompt.txt")
-	for _, want := range []string{"make run debe preparar Docker automáticamente", "make test debe preparar Docker automáticamente", "Menú principal exacto", "Guardado csv (<ruta actual>)", "Modelo (<proveedor: modelo actual>)", "El submenú Guardado csv no debe preguntar por modelo", "recortar cada imagen de data/src", "guardar el recorte en data/dst", "analizar la imagen recortada"} {
+	for _, want := range []string{"make run debe preparar Docker automáticamente", "make test debe preparar Docker automáticamente", "Menú principal requerido", "Guardado csv (<ruta actual>)", "Modelo (<proveedor: modelo actual>)", "El submenú Guardado csv no debe preguntar por modelo", "recortar localmente las imágenes decodificables de data/src", "copiarlo a data/dst como fallback", "analizar la imagen preparada"} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt.txt missing %q", want)
 		}

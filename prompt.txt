@@ -19,9 +19,9 @@ Stack obligatorio:
 
 Objetivo del producto:
 - Leer imágenes de portadas de vinilos.
-- recortar cada imagen de data/src para aislar el vinilo/portada frente a fondos u otros objetos.
-- guardar el recorte en data/dst.
-- analizar la imagen recortada desde data/dst, no la original de data/src.
+- recortar localmente las imágenes decodificables de data/src para aislar el vinilo/portada frente a fondos u otros objetos.
+- guardar el recorte en data/dst; si un formato soportado no se puede decodificar localmente, copiarlo a data/dst como fallback.
+- analizar la imagen preparada desde data/dst, no la original de data/src.
 - Identificar a qué álbum corresponden.
 - Obtener artista/banda y título del álbum.
 - Generar una valoración conservadora en euros.
@@ -58,7 +58,7 @@ Debe permitir:
 - Machacar/regenerar el CSV desde cero.
 - Elegir proveedor de reconocimiento: LM Studio local o Gemini.
 
-Menú principal exacto cuando se ejecuta sin flags:
+Menú principal requerido cuando se ejecuta sin flags:
 1. Procesar una imagen concreta.
 2. Procesar todas las imágenes de `data/src`.
 3. `Guardado csv (<ruta actual>)`.
@@ -183,7 +183,7 @@ Ejecuta la fase 3 del plan.
 
 Añade proveedores de reconocimiento:
 - LM Studio local compatible con API OpenAI.
-- Gemini como fallback.
+- Gemini como proveedor opcional seleccionable.
 
 Investiga los modelos locales disponibles y elige el mejor modelo de visión para imágenes.
 Usa ese modelo local por defecto.
@@ -281,7 +281,7 @@ Condiciones:
 - Las acciones posteriores deben reutilizar el CSV y modelo seleccionados en la sesión.
 - Mantén LM Studio como proveedor por defecto.
 - Mantén Gemini como opción.
-- Antes de reconocer, recorta cada imagen de data/src y guarda el resultado en data/dst.
+- Antes de reconocer, prepara cada imagen de data/src en data/dst: recorta los formatos decodificables localmente y copia como fallback los formatos soportados que no pueda decodificar.
 - El recognizer debe recibir la ruta de data/dst.
 - El CSV debe conservar como ID el nombre de la imagen original.
 - Ejecuta `go test ./...` dentro del Docker test mediante Makefile.
