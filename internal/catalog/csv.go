@@ -59,24 +59,13 @@ func Write(path string, rows []Row) error {
 	return writer.Error()
 }
 
-func Pending(images []string, reportPath string, replace bool) ([]string, error) {
-	if replace {
-		return images, nil
-	}
-	rows, err := Read(reportPath)
-	if err != nil {
-		return nil, err
-	}
-	existing := map[string]struct{}{}
-	for _, row := range rows {
-		existing[ImageID(row.SourceImage)] = struct{}{}
-	}
-	pending := make([]string, 0, len(images))
-	for _, image := range images {
-		if _, ok := existing[ImageID(image)]; ok {
-			continue
+func Upsert(rows []Row, row Row) []Row {
+	rowID := ImageID(row.SourceImage)
+	for index := range rows {
+		if ImageID(rows[index].SourceImage) == rowID {
+			rows[index] = row
+			return rows
 		}
-		pending = append(pending, image)
 	}
-	return pending, nil
+	return append(rows, row)
 }

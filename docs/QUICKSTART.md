@@ -57,11 +57,13 @@ make run IMAGE=DSC01.jpg
 make run IMAGE=data/src/DSC01.jpg
 ```
 
-Process every supported image in `data/src` and append missing rows:
+Process every supported image in `data/src`, overwrite prepared images in `data/dst`, and upsert CSV rows:
 
 ```bash
 make run-all
 ```
+
+Existing CSV rows with the same `source_image` are replaced with fresh recognition results. Rows for images not selected in the current run are kept unless you use replace mode.
 
 Regenerate the CSV from all images:
 

@@ -115,21 +115,68 @@ func TestProcessUsesImageBasenameAsCSVIdentifier(t *testing.T) {
 	}
 }
 
-func TestProcessSkipsExistingBasenameIdentifier(t *testing.T) {
+func TestProcessReprocessesExistingBasenameIdentifierAndUpdatesCSV(t *testing.T) {
 	tmp := t.TempDir()
 	src := filepath.Join(tmp, "data", "src", "DSC01.jpg")
 	writeTinyJPEG(t, src)
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
 	dstDir := filepath.Join(tmp, "data", "dst")
-	if err := catalog.Write(report, []catalog.Row{{SourceImage: "DSC01.jpg", Artist: "Existing"}}); err != nil {
+	if err := catalog.Write(report, []catalog.Row{{SourceImage: "DSC01.jpg", Artist: "Existing", Title: "Old"}}); err != nil {
 		t.Fatal(err)
 	}
-	rows, err := Process(context.Background(), []string{src}, report, false, dstDir, fakeRecognizer{})
+	identifyCalls := 0
+
+	rows, err := Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+		identifyCalls++
+		return catalog.Identification{Artist: "Fresh", Title: "New", IdentificationConfidence: "high"}, nil
+	}))
+
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 1 || rows[0].Artist != "Existing" {
+	if identifyCalls != 1 {
+		t.Fatalf("expected existing image to be recognized again, calls=%d", identifyCalls)
+	}
+	if len(rows) != 1 || rows[0].Artist != "Fresh" || rows[0].Title != "New" {
 		t.Fatalf("got %#v", rows)
+	}
+	written, err := catalog.Read(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(written) != 1 || written[0].Artist != "Fresh" || written[0].Title != "New" {
+		t.Fatalf("CSV row should be replaced, got %#v", written)
+	}
+}
+
+func TestProcessOverwritesDstImageWhenReprocessingExistingCSVRow(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "data", "src", "DSC01.jpg")
+	writeTinyJPEG(t, src)
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	dstDir := filepath.Join(tmp, "data", "dst")
+	dst := filepath.Join(dstDir, "DSC01.jpg")
+	if err := os.MkdirAll(dstDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dst, []byte("stale dst image"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := catalog.Write(report, []catalog.Row{{SourceImage: "DSC01.jpg", Artist: "Existing"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := Process(context.Background(), []string{src}, report, false, dstDir, fakeRecognizer{})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) == "stale dst image" {
+		t.Fatal("dst image was not overwritten during reprocessing")
 	}
 }
 
@@ -284,8 +331,8 @@ func TestRunInteractiveResetsActionModeAfterOptionTwo(t *testing.T) {
 	if stderr.String() != "" {
 		t.Fatalf("unexpected stderr: %s", stderr.String())
 	}
-	if strings.Join(seen, ",") != "DSC01.jpg,DSC02.jpg" {
-		t.Fatalf("option 1 should not fail after option 2, got %#v", seen)
+	if strings.Join(seen, ",") != "DSC01.jpg,DSC02.jpg,DSC01.jpg" {
+		t.Fatalf("option 1 should reprocess the selected image after option 2, got %#v", seen)
 	}
 }
 

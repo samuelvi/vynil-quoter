@@ -2,7 +2,7 @@
 
 VinylQuoter identifies vinyl records from cover images in `data/src/` and writes a valuation catalog to `data/report/album_catalog.csv`.
 
-For the fastest path, read [docs/QUICKSTART.md](docs/QUICKSTART.md).
+For the fastest path, read [docs/QUICKSTART.md](docs/QUICKSTART.md). For all project documentation, use [docs/index.md](docs/index.md).
 
 ## What it does
 
@@ -116,7 +116,7 @@ Columns:
 - `price_basis`
 - `notes`
 
-Update mode keeps existing rows and skips images already present in the CSV. Replace mode regenerates the CSV from scratch only for all-images runs; single-image CLI runs always update/create the CSV and never replace it.
+Normal processing reprocesses the selected source images every time, overwrites their prepared files in `data/dst`, and upserts CSV rows by `source_image`. Rows for images not selected in the current run are preserved. Replace mode regenerates the CSV from scratch only for all-images runs; single-image CLI runs always update/create the CSV and never replace it.
 
 ## Data and Git
 
@@ -126,4 +126,4 @@ Update mode keeps existing rows and skips images already present in the CSV. Rep
 
 - `GEMINI_API_KEY is required`: choose LM Studio or export a Gemini API key.
 - `LM Studio request failed`: start LM Studio, load the vision model, and enable the local server.
-- Missing rows in update mode: run `make run-all-replace`.
+- Stale or missing rows: run `make run-all` to refresh every supported image in `data/src`, or `make run-all-replace` to discard rows for images no longer present and regenerate the CSV from current inputs.

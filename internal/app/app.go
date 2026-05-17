@@ -124,11 +124,7 @@ func Process(ctx context.Context, images []string, reportPath string, replace bo
 		}
 		rows = existing
 	}
-	pending, err := catalog.Pending(images, reportPath, replace)
-	if err != nil {
-		return nil, err
-	}
-	for _, image := range pending {
+	for _, image := range images {
 		cropResult, cropErr := crop.Process(image, destinationDir)
 		imageForRecognition := cropResult.CroppedPath
 		if cropErr != nil {
@@ -141,12 +137,13 @@ func Process(ctx context.Context, images []string, reportPath string, replace bo
 		if cropErr != nil {
 			identification.Notes = strings.TrimSpace(identification.Notes + " crop failed: " + cropErr.Error())
 		}
-		rows = append(rows, catalog.Row{SourceImage: catalog.ImageID(image), Artist: identification.Artist, Title: identification.Title, IdentificationConfidence: identification.IdentificationConfidence, RecommendedPriceEUR: identification.RecommendedPriceEUR, PriceConfidence: identification.PriceConfidence, PriceBasis: identification.PriceBasis, Notes: identification.Notes})
+		row := catalog.Row{SourceImage: catalog.ImageID(image), Artist: identification.Artist, Title: identification.Title, IdentificationConfidence: identification.IdentificationConfidence, RecommendedPriceEUR: identification.RecommendedPriceEUR, PriceConfidence: identification.PriceConfidence, PriceBasis: identification.PriceBasis, Notes: identification.Notes}
+		rows = catalog.Upsert(rows, row)
 		if err := catalog.Write(reportPath, rows); err != nil {
 			return nil, err
 		}
 	}
-	if len(pending) == 0 {
+	if len(images) == 0 {
 		if err := catalog.Write(reportPath, rows); err != nil {
 			return nil, err
 		}
