@@ -16,6 +16,7 @@ __pycache__/
 .opencode.local/
 opencode-bundle/
 memory-bank/
+.worktrees/
 
 # Input/output data
 data/*
