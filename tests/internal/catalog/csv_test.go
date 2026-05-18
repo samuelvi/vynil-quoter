@@ -101,6 +101,53 @@ func TestWriteReadRowsIncludesReferenceURLColumns(t *testing.T) {
 	}
 }
 
+func TestWriteReadRowsIncludesConditionColumn(t *testing.T) {
+	tmp := t.TempDir()
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	row := catalog.Row{SourceImage: "DSC01.jpg", Artist: "The Cure", Title: "Disintegration", RecommendedPriceEUR: "22", Condition: "media: VG; sleeve: G+", PriceConfidence: "medium"}
+
+	if err := catalog.Write(report, []catalog.Row{row}); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "recommended_price_eur,condition,price_confidence") {
+		t.Fatalf("CSV header missing condition between price and confidence: %s", string(content))
+	}
+	rows, err := catalog.Read(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].Condition != row.Condition {
+		t.Fatalf("got %#v", rows)
+	}
+}
+
+func TestReadOldElevenColumnCSVKeepsEmptyCondition(t *testing.T) {
+	tmp := t.TempDir()
+	report := filepath.Join(tmp, "album_catalog.csv")
+	oldCSV := "source_image,artist,title,identification_confidence,recommended_price_eur,price_confidence,price_basis,notes,discogs_reference_url,ebay_reference_url,popsike_reference_url\nDSC01.jpg,The Cure,Disintegration,high,22,medium,basis,notes,https://discogs.example,https://ebay.example,https://popsike.example\n"
+	if err := os.WriteFile(report, []byte(oldCSV), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := catalog.Read(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("got %#v", rows)
+	}
+	if rows[0].Condition != "" {
+		t.Fatalf("old CSV rows should have empty condition, got %#v", rows[0])
+	}
+	if rows[0].DiscogsReferenceURL != "https://discogs.example" || rows[0].EBayReferenceURL != "https://ebay.example" || rows[0].PopsikeReferenceURL != "https://popsike.example" {
+		t.Fatalf("old CSV URLs should stay mapped, got %#v", rows[0])
+	}
+}
+
 func TestReadOldEightColumnCSVKeepsEmptyReferenceURLs(t *testing.T) {
 	tmp := t.TempDir()
 	report := filepath.Join(tmp, "album_catalog.csv")
@@ -118,5 +165,8 @@ func TestReadOldEightColumnCSVKeepsEmptyReferenceURLs(t *testing.T) {
 	}
 	if rows[0].DiscogsReferenceURL != "" || rows[0].EBayReferenceURL != "" || rows[0].PopsikeReferenceURL != "" {
 		t.Fatalf("old CSV rows should have empty reference URLs, got %#v", rows[0])
+	}
+	if rows[0].Condition != "" {
+		t.Fatalf("old CSV rows should have empty condition, got %#v", rows[0])
 	}
 }

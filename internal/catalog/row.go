@@ -16,6 +16,7 @@ type Row struct {
 	Title                    string
 	IdentificationConfidence string
 	RecommendedPriceEUR      string
+	Condition                string
 	PriceConfidence          string
 	PriceBasis               string
 	Notes                    string
@@ -30,4 +31,4 @@ type ReferenceLinks struct {
 	Popsike string
 }
 
-var Header = []string{"source_image", "artist", "title", "identification_confidence", "recommended_price_eur", "price_confidence", "price_basis", "notes", "discogs_reference_url", "ebay_reference_url", "popsike_reference_url"}
+var Header = []string{"source_image", "artist", "title", "identification_confidence", "recommended_price_eur", "condition", "price_confidence", "price_basis", "notes", "discogs_reference_url", "ebay_reference_url", "popsike_reference_url"}
