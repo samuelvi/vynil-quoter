@@ -1,0 +1,3 @@
+[submodule "opencode-bundle"]
+	path = opencode-bundle
+	url = git@github.com:samuelvi/opencode-bundle.git

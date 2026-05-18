@@ -1,4 +1,4 @@
-.PHONY: help build run run-cli run-all run-all-replace run-gemini test quality clean docker-build docker-up docker-down docker-shell test-build test-up test-down test-shell opencode.init opencode.link opencode.verify opencode.open opencode.start
+.PHONY: help build run run-cli run-all run-all-replace run-gemini test quality clean docker-build docker-up docker-down docker-shell test-build test-up test-down test-shell opencode.init opencode.link opencode.verify opencode.open opencode.update opencode.start
 
 IMAGE ?=
 MODEL ?=
@@ -12,6 +12,7 @@ APP ?= ./cmd/vinyl-quoter
 BIN ?= bin/vinyl-quoter
 LM_STUDIO_BASE_URL ?= http://host.docker.internal:1234/v1
 MODEL_ARG := $(if $(MODEL),--model "$(MODEL)",)
+OPENCODE_PROJECT_ROOT ?= $(CURDIR)
 
 help:
 	@printf "VinylQuoter commands:\n"
@@ -29,6 +30,7 @@ help:
 	@printf "  make test                         Run Go unit tests inside Docker\n"
 	@printf "  make quality                 Run tests and strict quick quality gate\n"
 	@printf "  make clean                   Remove local Python cache files\n"
+	@printf "  make opencode.start          Initialize, link, verify, and open OpenCode from this project\n"
 
 build: docker-build
 	$(DOCKER_RUN) $(GO) build -o $(BIN) $(APP)
@@ -86,12 +88,15 @@ opencode.init:
 	$(MAKE) -C opencode-bundle bundle-init-all
 
 opencode.link:
-	$(MAKE) -C opencode-bundle link-parent
+	$(MAKE) -C opencode-bundle link-parent PARENT_ROOT="$(OPENCODE_PROJECT_ROOT)"
 
 opencode.verify:
 	$(MAKE) -C opencode-bundle bundle-verify-all
 
 opencode.open:
-	$(MAKE) -C opencode-bundle opencode-all
+	OPENCODE_PROJECT_ROOT="$(OPENCODE_PROJECT_ROOT)" $(MAKE) -C opencode-bundle opencode-all
+
+opencode.update:
+	$(MAKE) -C opencode-bundle bundle-update
 
 opencode.start: opencode.init opencode.link opencode.verify opencode.open
