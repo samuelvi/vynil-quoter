@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 	"vinylquoter/internal/catalog"
@@ -120,7 +121,7 @@ func runOnce(ctx context.Context, cfg config.RunConfig, stdout io.Writer, stderr
 	} else {
 		fmt.Fprintf(stdout, "Procesando imagen: %s\n", catalog.ImageID(images[0]))
 	}
-	rows, err := Process(ctx, images, cfg.ReportPath, cfg.Replace, cfg.DestinationDir, recognizer)
+	rows, err := ProcessWithConfig(ctx, images, cfg.ReportPath, cfg.Replace, cfg.DestinationDir, cfg, recognizer)
 	if err != nil {
 		fmt.Fprintln(stderr, "error:", err)
 		return 2
@@ -130,6 +131,10 @@ func runOnce(ctx context.Context, cfg config.RunConfig, stdout io.Writer, stderr
 }
 
 func Process(ctx context.Context, images []string, reportPath string, replace bool, destinationDir string, recognizer provider.Recognizer) ([]catalog.Row, error) {
+	return ProcessWithConfig(ctx, images, reportPath, replace, destinationDir, config.DefaultRunConfig(), recognizer)
+}
+
+func ProcessWithConfig(ctx context.Context, images []string, reportPath string, replace bool, destinationDir string, cfg config.RunConfig, recognizer provider.Recognizer) ([]catalog.Row, error) {
 	rows := []catalog.Row{}
 	if !replace {
 		existing, err := catalog.Read(reportPath)
@@ -157,7 +162,8 @@ func Process(ctx context.Context, images []string, reportPath string, replace bo
 			Artist:                   identification.Artist,
 			Title:                    identification.Title,
 			IdentificationConfidence: identification.IdentificationConfidence,
-			RecommendedPriceEUR:      identification.RecommendedPriceEUR,
+			RecommendedPriceEUR:      numericPrice(identification.RecommendedPriceEUR),
+			Condition:                conditionLabel(cfg),
 			PriceConfidence:          identification.PriceConfidence,
 			PriceBasis:               identification.PriceBasis,
 			Notes:                    identification.Notes,
@@ -176,6 +182,18 @@ func Process(ctx context.Context, images []string, reportPath string, replace bo
 		}
 	}
 	return rows, nil
+}
+
+func conditionLabel(cfg config.RunConfig) string {
+	return "media: " + cfg.MediaCondition + "; sleeve: " + cfg.SleeveCondition
+}
+
+var numericPricePattern = regexp.MustCompile(`\d+(?:[.,]\d+)?(?:\s*-\s*\d+(?:[.,]\d+)?)?`)
+
+func numericPrice(value string) string {
+	match := numericPricePattern.FindString(strings.TrimSpace(value))
+	match = strings.ReplaceAll(match, " ", "")
+	return strings.ReplaceAll(match, ",", ".")
 }
 
 func recognizerFor(cfg config.RunConfig) (provider.Recognizer, error) {

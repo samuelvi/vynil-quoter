@@ -98,6 +98,34 @@ func TestProcessWritesRows(t *testing.T) {
 	}
 }
 
+func TestProcessWritesConditionAndSanitizesPrice(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "data", "src", "a.jpg")
+	writeTinyJPEG(t, src)
+	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+	dstDir := filepath.Join(tmp, "data", "dst")
+	cfg := config.DefaultRunConfig()
+	cfg.MediaCondition = config.ConditionVeryGoodPlus
+	cfg.SleeveCondition = config.ConditionGoodPlus
+
+	rows, err := app.ProcessWithConfig(context.Background(), []string{src}, report, false, dstDir, cfg, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+		return catalog.Identification{Artist: "The Cure", Title: "Disintegration", RecommendedPriceEUR: "15-20 EUR"}, nil
+	}))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("got %#v", rows)
+	}
+	if rows[0].Condition != "media: VG+; sleeve: G+" {
+		t.Fatalf("condition mismatch: %#v", rows[0])
+	}
+	if rows[0].RecommendedPriceEUR != "15-20" {
+		t.Fatalf("price should be sanitized, got %#v", rows[0])
+	}
+}
+
 func TestProcessAddsPriceReferenceURLs(t *testing.T) {
 	tmp := t.TempDir()
 	src := filepath.Join(tmp, "data", "src", "DSC01.jpg")
@@ -347,6 +375,13 @@ func TestRunInteractivePersistsSelectedConditions(t *testing.T) {
 	}
 	if seen[0].SleeveCondition != "VG+" || seen[0].MediaCondition != "G+" {
 		t.Fatalf("condition state was not persisted: %#v", seen[0])
+	}
+	written, err := catalog.Read(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(written) != 1 || written[0].Condition != "media: G+; sleeve: VG+" {
+		t.Fatalf("selected conditions were not written to CSV: %#v", written)
 	}
 }
 
