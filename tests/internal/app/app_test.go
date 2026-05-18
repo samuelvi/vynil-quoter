@@ -53,6 +53,36 @@ func TestParseArgsDefaults(t *testing.T) {
 	}
 }
 
+func TestParseArgsDefaultsToVGConditions(t *testing.T) {
+	cfg, err := app.ParseArgs([]string{"--all"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.MediaCondition != config.DefaultCondition || cfg.SleeveCondition != config.DefaultCondition {
+		t.Fatalf("got %#v", cfg)
+	}
+}
+
+func TestParseArgsSupportsConditionFlags(t *testing.T) {
+	cfg, err := app.ParseArgs([]string{"--all", "--media-condition", "VG+", "--sleeve-condition", "G+"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.MediaCondition != config.ConditionVeryGoodPlus || cfg.SleeveCondition != config.ConditionGoodPlus {
+		t.Fatalf("got %#v", cfg)
+	}
+}
+
+func TestParseArgsRejectsInvalidCondition(t *testing.T) {
+	_, err := app.ParseArgs([]string{"--all", "--media-condition", "BAD"})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "invalid media condition") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestProcessWritesRows(t *testing.T) {
 	tmp := t.TempDir()
 	src := filepath.Join(tmp, "data", "src", "a.jpg")

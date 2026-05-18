@@ -36,8 +36,16 @@ func ParseArgs(args []string) (config.RunConfig, error) {
 	set.IntVar(&cfg.TimeoutSeconds, "timeout", cfg.TimeoutSeconds, "request timeout seconds")
 	set.IntVar(&cfg.MaxRetries, "max-retries", cfg.MaxRetries, "Gemini retry count")
 	set.Float64Var(&cfg.RetryDelaySecs, "retry-delay", cfg.RetryDelaySecs, "fallback retry delay seconds")
+	set.StringVar(&cfg.MediaCondition, "media-condition", cfg.MediaCondition, "media condition")
+	set.StringVar(&cfg.SleeveCondition, "sleeve-condition", cfg.SleeveCondition, "sleeve condition")
 	if err := set.Parse(args); err != nil {
 		return cfg, err
+	}
+	if !config.IsMediaCondition(cfg.MediaCondition) {
+		return cfg, fmt.Errorf("invalid media condition: %s", cfg.MediaCondition)
+	}
+	if !config.IsSleeveCondition(cfg.SleeveCondition) {
+		return cfg, fmt.Errorf("invalid sleeve condition: %s", cfg.SleeveCondition)
 	}
 	if cfg.Provider == config.ProviderGemini && cfg.Model == config.DefaultLMStudioModel {
 		cfg.Model = config.DefaultGeminiModel

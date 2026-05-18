@@ -11,7 +11,39 @@ const (
 	DefaultProvider        = "lm-studio"
 	ProviderGemini         = "gemini"
 	ProviderLMStudio       = "lm-studio"
+	ConditionMint          = "M"
+	ConditionNearMint      = "NM/M-"
+	ConditionVeryGoodPlus  = "VG+"
+	DefaultCondition       = "VG"
+	ConditionGoodPlus      = "G+"
+	ConditionGood          = "G"
+	ConditionFair          = "F"
+	ConditionPoor          = "P"
+	ConditionGeneric       = "Generic"
 )
+
+var MediaConditions = []string{
+	ConditionMint,
+	ConditionNearMint,
+	ConditionVeryGoodPlus,
+	DefaultCondition,
+	ConditionGoodPlus,
+	ConditionGood,
+	ConditionFair,
+	ConditionPoor,
+}
+
+var SleeveConditions = []string{
+	ConditionMint,
+	ConditionNearMint,
+	ConditionVeryGoodPlus,
+	DefaultCondition,
+	ConditionGoodPlus,
+	ConditionGood,
+	ConditionFair,
+	ConditionPoor,
+	ConditionGeneric,
+}
 
 type RunConfig struct {
 	Image           string
@@ -26,6 +58,8 @@ type RunConfig struct {
 	TimeoutSeconds  int
 	MaxRetries      int
 	RetryDelaySecs  float64
+	MediaCondition  string
+	SleeveCondition string
 }
 
 func DefaultRunConfig() RunConfig {
@@ -39,5 +73,24 @@ func DefaultRunConfig() RunConfig {
 		TimeoutSeconds:  60,
 		MaxRetries:      3,
 		RetryDelaySecs:  7,
+		MediaCondition:  DefaultCondition,
+		SleeveCondition: DefaultCondition,
 	}
+}
+
+func IsMediaCondition(condition string) bool {
+	return containsCondition(MediaConditions, condition)
+}
+
+func IsSleeveCondition(condition string) bool {
+	return containsCondition(SleeveConditions, condition)
+}
+
+func containsCondition(conditions []string, condition string) bool {
+	for _, allowed := range conditions {
+		if condition == allowed {
+			return true
+		}
+	}
+	return false
 }
