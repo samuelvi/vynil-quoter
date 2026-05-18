@@ -190,9 +190,18 @@ func TestProcessAddsPriceReferenceURLs(t *testing.T) {
 		"ebay":    rows[0].EBayReferenceURL,
 		"popsike": rows[0].PopsikeReferenceURL,
 	} {
-		if !strings.Contains(got, "The+Cure+Disintegration+vinyl+VG%2B+sleeve+VG%2B") {
-			t.Fatalf("%s URL missing expected query: %s", name, got)
+		if strings.Contains(got, "VG") || strings.Contains(got, "VG%2B") || strings.Contains(got, "sleeve") {
+			t.Fatalf("%s URL should not contain condition hints: %s", name, got)
 		}
+	}
+	if !strings.Contains(rows[0].DiscogsReferenceURL, "The+Cure+Disintegration") {
+		t.Fatalf("Discogs URL missing artist/title query: %s", rows[0].DiscogsReferenceURL)
+	}
+	if !strings.Contains(rows[0].EBayReferenceURL, "The+Cure+Disintegration+vinyl+lp") {
+		t.Fatalf("eBay URL missing broad marketplace query: %s", rows[0].EBayReferenceURL)
+	}
+	if !strings.Contains(rows[0].PopsikeReferenceURL, "The+Cure+Disintegration") {
+		t.Fatalf("Popsike URL missing artist/title query: %s", rows[0].PopsikeReferenceURL)
 	}
 }
 

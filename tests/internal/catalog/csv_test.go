@@ -84,6 +84,29 @@ func TestReferenceURLsUseBroadMarketplaceQueries(t *testing.T) {
 	}
 }
 
+func TestReferenceURLsSkipUnknownAndEmptyValues(t *testing.T) {
+	refs := catalog.ReferenceURLs("Unknown", "")
+
+	for name, got := range map[string]string{
+		"discogs": refs.Discogs,
+		"ebay":    refs.EBay,
+		"popsike": refs.Popsike,
+	} {
+		if strings.Contains(got, "Unknown") || strings.Contains(got, "VG") || strings.Contains(got, "sleeve") {
+			t.Fatalf("%s URL should not contain unknown or condition hints: %s", name, got)
+		}
+	}
+	if !strings.HasPrefix(refs.Discogs, "https://www.discogs.com/search/") {
+		t.Fatalf("unexpected Discogs URL: %s", refs.Discogs)
+	}
+	if !strings.HasPrefix(refs.EBay, "https://www.ebay.es/sch/i.html") {
+		t.Fatalf("unexpected eBay URL: %s", refs.EBay)
+	}
+	if !strings.HasPrefix(refs.Popsike, "https://www.popsike.com/php/quicksearch.php") {
+		t.Fatalf("unexpected Popsike URL: %s", refs.Popsike)
+	}
+}
+
 func TestWriteReadRowsIncludesReferenceURLColumns(t *testing.T) {
 	tmp := t.TempDir()
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
