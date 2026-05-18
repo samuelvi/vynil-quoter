@@ -354,7 +354,7 @@ func TestRunInteractiveReturnsToMenuUntilExit(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
-	stdin := bytes.NewBufferString("1\n" + image + "\n7\n")
+	stdin := bytes.NewBufferString("1\n" + image + "\n0\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
@@ -383,7 +383,7 @@ func TestRunInteractivePersistsSelectedModelAndCSV(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := filepath.Join(tmp, "custom.csv")
-	stdin := bytes.NewBufferString("4\n3\n3\n1\n" + report + "\n1\n" + image + "\n7\n")
+	stdin := bytes.NewBufferString("4\n3\n3\n1\n" + report + "\n1\n" + image + "\n0\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
@@ -411,7 +411,7 @@ func TestRunInteractivePersistsSelectedConditions(t *testing.T) {
 	image := filepath.Join(src, "DSC01.jpg")
 	writeTinyJPEG(t, image)
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
-	stdin := bytes.NewBufferString("5\n3\n6\n5\n1\n" + image + "\n7\n")
+	stdin := bytes.NewBufferString("5\n3\n6\n5\n1\n" + image + "\n0\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
@@ -453,7 +453,7 @@ func TestRunInteractiveOptionTwoProcessesAllImages(t *testing.T) {
 		}
 	}
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
-	stdin := bytes.NewBufferString("2\n7\n")
+	stdin := bytes.NewBufferString("2\n0\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
@@ -490,7 +490,7 @@ func TestRunInteractiveResetsActionModeAfterOptionTwo(t *testing.T) {
 		}
 	}
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
-	stdin := bytes.NewBufferString("2\n1\nDSC01.jpg\n7\n")
+	stdin := bytes.NewBufferString("2\n1\nDSC01.jpg\n0\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()

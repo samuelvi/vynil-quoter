@@ -56,7 +56,7 @@ Interactive state is changed through `Guardado csv` and `Modelo (<current provid
 - [Usage Guide](docs/USAGE.md) — menu, flags, providers, conditions, and data flow.
 - [CSV Output](docs/CSV.md) — columns, update/replace policy, and reference URL behavior.
 - [Development Guide](docs/DEVELOPMENT.md) — Docker runtime, tests, quality checks, and project layout.
-- [Documentation Index](docs/index.md) — all maintained docs and active plans.
+- [Documentation Index](docs/index.md) — all maintained docs and active implementation plans.
 
 ## Project layout
 

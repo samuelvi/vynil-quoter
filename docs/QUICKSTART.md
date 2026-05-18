@@ -31,13 +31,13 @@ The menu stays open after each action and exits only when you choose `Salir`.
 
 Main menu:
 
+0. `Salir`
 1. `Procesar una imagen concreta`
 2. `Procesar todas las imágenes de data/src`
 3. `Guardado csv (<current CSV path>)`
 4. `Modelo (<current provider: model>)`
 5. `Calidad carátula (<current sleeve condition>)`
 6. `Calidad vinilo (<current media condition>)`
-7. `Salir`
 
 Defaults:
 

@@ -12,6 +12,7 @@
 
 ## Active Plans
 
+- [Menu Exit Zero Implementation Plan](superpowers/plans/2026-05-18-menu-exit-zero.md) — task-by-task TDD plan for making `0` the main menu exit option.
 - [Condition Menu and Report Design](plans/2026-05-18-condition-menu-report-design.md) — accepted behavior for media/sleeve grading, CSV condition reporting, broad reference links, and numeric-only prices.
 - [Condition Menu Report Implementation Plan](plans/2026-05-18-condition-menu-report.md) — task-by-task TDD implementation plan.
 - [Reprocess Images and Upsert CSV Design](plans/2026-05-17-reprocess-images-upsert-design.md) — accepted behavior and design for refreshing `src → dst → CSV` results.

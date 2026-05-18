@@ -55,6 +55,32 @@ func TestMenuDefaultProviderIsLocalVisionModel(t *testing.T) {
 	}
 }
 
+func TestMenuExitUsesZero(t *testing.T) {
+	_, err := ui.ReadMenu(bytes.NewBufferString("0\n"), &bytes.Buffer{})
+	if err == nil || err.Error() != "EOF" {
+		t.Fatalf("expected EOF for exit option 0, got %v", err)
+	}
+}
+
+func TestMenuSevenIsInvalid(t *testing.T) {
+	_, err := ui.ReadMenu(bytes.NewBufferString("7\n"), &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "invalid menu choice") {
+		t.Fatalf("expected invalid choice for option 7, got %v", err)
+	}
+}
+
+func TestMenuShowsExitAsZero(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\n"), stdout, config.DefaultRunConfig())
+	output := stdout.String()
+	if !strings.Contains(output, "0) Salir") {
+		t.Fatalf("menu should show exit as zero, got %s", output)
+	}
+	if !strings.Contains(output, "Elige una opción [0-6]:") {
+		t.Fatalf("menu should show [0-6] prompt, got %s", output)
+	}
+}
+
 func TestMenuCanSelectAlternateLMStudioVisionModel(t *testing.T) {
 	cfg, err := ui.ReadMenu(bytes.NewBufferString("4\n2\n"), &bytes.Buffer{})
 	if err != ui.ErrNoAction {
@@ -71,7 +97,7 @@ func TestMenuShowsCurrentCSVAndModelState(t *testing.T) {
 	state.ReportPath = "custom/report.csv"
 	state.Provider = config.ProviderGemini
 	state.Model = config.DefaultGeminiModel
-	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("7\n"), stdout, state)
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\n"), stdout, state)
 	output := stdout.String()
 	if !strings.Contains(output, "Guardado csv (custom/report.csv)") {
 		t.Fatalf("menu should show current CSV path, got %s", output)
@@ -106,7 +132,7 @@ func TestMenuShowsCurrentConditionState(t *testing.T) {
 	state := config.DefaultRunConfig()
 	state.MediaCondition = "VG+"
 	state.SleeveCondition = "G+"
-	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("7\n"), stdout, state)
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\n"), stdout, state)
 	output := stdout.String()
 	if !strings.Contains(output, "Calidad carátula (G+)") {
 		t.Fatalf("menu should show sleeve condition, got %s", output)

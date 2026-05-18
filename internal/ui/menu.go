@@ -29,10 +29,12 @@ func ReadMenuWithState(in io.Reader, out io.Writer, state config.RunConfig) (con
 	fmt.Fprintf(out, "4) Modelo (%s)\n", modelLabel(cfg))
 	fmt.Fprintf(out, "5) Calidad carátula (%s)\n", cfg.SleeveCondition)
 	fmt.Fprintf(out, "6) Calidad vinilo (%s)\n", cfg.MediaCondition)
-	fmt.Fprintln(out, "7) Salir")
-	fmt.Fprint(out, "Elige una opción [1-7]: ")
+	fmt.Fprintln(out, "0) Salir")
+	fmt.Fprint(out, "Elige una opción [0-6]: ")
 	choice, _ := reader.ReadString('\n')
 	switch strings.TrimSpace(choice) {
+	case "0":
+		return cfg, io.EOF
 	case "1":
 		fmt.Fprint(out, "Ruta o nombre de imagen: ")
 		image, _ := reader.ReadString('\n')
@@ -68,8 +70,6 @@ func ReadMenuWithState(in io.Reader, out io.Writer, state config.RunConfig) (con
 		}
 		cfg.MediaCondition = condition
 		return cfg, ErrNoAction
-	case "7":
-		return cfg, io.EOF
 	default:
 		return cfg, fmt.Errorf("invalid menu choice")
 	}
