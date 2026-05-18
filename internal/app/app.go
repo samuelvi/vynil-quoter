@@ -188,12 +188,20 @@ func conditionLabel(cfg config.RunConfig) string {
 	return "media: " + cfg.MediaCondition + "; sleeve: " + cfg.SleeveCondition
 }
 
-var numericPricePattern = regexp.MustCompile(`\d+(?:[.,]\d+)?(?:\s*-\s*\d+(?:[.,]\d+)?)?`)
+var numericPricePattern = regexp.MustCompile(`\d+(?:[.,]\d+)?`)
 
 func numericPrice(value string) string {
-	match := numericPricePattern.FindString(strings.TrimSpace(value))
-	match = strings.ReplaceAll(match, " ", "")
-	return strings.ReplaceAll(match, ",", ".")
+	matches := numericPricePattern.FindAllString(strings.TrimSpace(value), 2)
+	for index, match := range matches {
+		matches[index] = strings.ReplaceAll(match, ",", ".")
+	}
+	if len(matches) == 0 {
+		return ""
+	}
+	if len(matches) == 1 {
+		return matches[0]
+	}
+	return matches[0] + "-" + matches[1]
 }
 
 func recognizerFor(cfg config.RunConfig) (provider.Recognizer, error) {

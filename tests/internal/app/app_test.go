@@ -126,6 +126,48 @@ func TestProcessWritesConditionAndSanitizesPrice(t *testing.T) {
 	}
 }
 
+func TestProcessSanitizesPriceVariants(t *testing.T) {
+	cases := []struct {
+		name  string
+		price string
+		want  string
+	}{
+		{name: "currency_between_range_values", price: "15 EUR - 20 EUR", want: "15-20"},
+		{name: "en_dash_range", price: "15 – 20 EUR", want: "15-20"},
+		{name: "to_range", price: "15 to 20 EUR", want: "15-20"},
+		{name: "leading_euro_symbol", price: "€12", want: "12"},
+		{name: "euro_word", price: "12 euros", want: "12"},
+		{name: "compact_range", price: "15-20 EUR", want: "15-20"},
+		{name: "decimal_comma", price: "12,50 EUR", want: "12.50"},
+		{name: "empty", price: "", want: ""},
+		{name: "non_numeric", price: "price unavailable", want: ""},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			src := filepath.Join(tmp, "data", "src", "a.jpg")
+			writeTinyJPEG(t, src)
+			report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
+			dstDir := filepath.Join(tmp, "data", "dst")
+
+			rows, err := app.ProcessWithConfig(context.Background(), []string{src}, report, false, dstDir, config.DefaultRunConfig(), recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+				return catalog.Identification{Artist: "The Cure", Title: "Disintegration", RecommendedPriceEUR: tc.price}, nil
+			}))
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(rows) != 1 {
+				t.Fatalf("got %#v", rows)
+			}
+			if rows[0].RecommendedPriceEUR != tc.want {
+				t.Fatalf("price %q sanitized to %q, want %q", tc.price, rows[0].RecommendedPriceEUR, tc.want)
+			}
+		})
+	}
+}
+
 func TestProcessAddsPriceReferenceURLs(t *testing.T) {
 	tmp := t.TempDir()
 	src := filepath.Join(tmp, "data", "src", "DSC01.jpg")
