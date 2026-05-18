@@ -71,7 +71,7 @@ func TestMenuShowsCurrentCSVAndModelState(t *testing.T) {
 	state.ReportPath = "custom/report.csv"
 	state.Provider = config.ProviderGemini
 	state.Model = config.DefaultGeminiModel
-	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("5\n"), stdout, state)
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("7\n"), stdout, state)
 	output := stdout.String()
 	if !strings.Contains(output, "Guardado csv (custom/report.csv)") {
 		t.Fatalf("menu should show current CSV path, got %s", output)
@@ -97,6 +97,41 @@ func TestMenuCanChangeModelFromMainMenu(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 	if cfg.Provider != config.ProviderGemini || cfg.Model != config.DefaultGeminiModel {
+		t.Fatalf("got %#v", cfg)
+	}
+}
+
+func TestMenuShowsCurrentConditionState(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	state := config.DefaultRunConfig()
+	state.MediaCondition = "VG+"
+	state.SleeveCondition = "G+"
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("7\n"), stdout, state)
+	output := stdout.String()
+	if !strings.Contains(output, "Calidad carátula (G+)") {
+		t.Fatalf("menu should show sleeve condition, got %s", output)
+	}
+	if !strings.Contains(output, "Calidad vinilo (VG+)") {
+		t.Fatalf("menu should show media condition, got %s", output)
+	}
+}
+
+func TestMenuCanSelectSleeveCondition(t *testing.T) {
+	cfg, err := ui.ReadMenuWithState(bytes.NewBufferString("5\n3\n"), &bytes.Buffer{}, config.DefaultRunConfig())
+	if err != ui.ErrNoAction {
+		t.Fatalf("got %v", err)
+	}
+	if cfg.SleeveCondition != "VG+" {
+		t.Fatalf("got %#v", cfg)
+	}
+}
+
+func TestMenuCanSelectMediaCondition(t *testing.T) {
+	cfg, err := ui.ReadMenuWithState(bytes.NewBufferString("6\n5\n"), &bytes.Buffer{}, config.DefaultRunConfig())
+	if err != ui.ErrNoAction {
+		t.Fatalf("got %v", err)
+	}
+	if cfg.MediaCondition != "G+" {
 		t.Fatalf("got %#v", cfg)
 	}
 }

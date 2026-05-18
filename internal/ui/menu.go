@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"vinylquoter/internal/config"
 )
@@ -26,8 +27,10 @@ func ReadMenuWithState(in io.Reader, out io.Writer, state config.RunConfig) (con
 	fmt.Fprintln(out, "2) Procesar todas las imágenes de data/src")
 	fmt.Fprintf(out, "3) Guardado csv (%s)\n", cfg.ReportPath)
 	fmt.Fprintf(out, "4) Modelo (%s)\n", modelLabel(cfg))
-	fmt.Fprintln(out, "5) Salir")
-	fmt.Fprint(out, "Elige una opción [1-5]: ")
+	fmt.Fprintf(out, "5) Calidad carátula (%s)\n", cfg.SleeveCondition)
+	fmt.Fprintf(out, "6) Calidad vinilo (%s)\n", cfg.MediaCondition)
+	fmt.Fprintln(out, "7) Salir")
+	fmt.Fprint(out, "Elige una opción [1-7]: ")
 	choice, _ := reader.ReadString('\n')
 	switch strings.TrimSpace(choice) {
 	case "1":
@@ -52,6 +55,20 @@ func ReadMenuWithState(in io.Reader, out io.Writer, state config.RunConfig) (con
 		cfg.Model = model
 		return cfg, ErrNoAction
 	case "5":
+		condition, err := ReadSleeveCondition(reader, out, cfg.SleeveCondition)
+		if err != nil {
+			return cfg, err
+		}
+		cfg.SleeveCondition = condition
+		return cfg, ErrNoAction
+	case "6":
+		condition, err := ReadMediaCondition(reader, out, cfg.MediaCondition)
+		if err != nil {
+			return cfg, err
+		}
+		cfg.MediaCondition = condition
+		return cfg, ErrNoAction
+	case "7":
 		return cfg, io.EOF
 	default:
 		return cfg, fmt.Errorf("invalid menu choice")
@@ -97,6 +114,36 @@ func ReadCSVMenu(in *bufio.Reader, out io.Writer, state config.RunConfig) (confi
 
 func modelLabel(cfg config.RunConfig) string {
 	return cfg.Provider + ": " + cfg.Model
+}
+
+func ReadMediaCondition(in *bufio.Reader, out io.Writer, current string) (string, error) {
+	return readCondition(in, out, "Calidad vinilo", current, config.MediaConditions)
+}
+
+func ReadSleeveCondition(in *bufio.Reader, out io.Writer, current string) (string, error) {
+	return readCondition(in, out, "Calidad carátula", current, config.SleeveConditions)
+}
+
+func readCondition(in *bufio.Reader, out io.Writer, title string, current string, values []string) (string, error) {
+	fmt.Fprintf(out, "\n%s (%s)\n", title, current)
+	for index, value := range values {
+		defaultLabel := ""
+		if value == config.DefaultCondition {
+			defaultLabel = " [por defecto]"
+		}
+		fmt.Fprintf(out, "%d) %s%s\n", index+1, value, defaultLabel)
+	}
+	fmt.Fprintf(out, "Elige calidad [1-%d, Enter=%s]: ", len(values), current)
+	choice, _ := in.ReadString('\n')
+	trimmed := strings.TrimSpace(choice)
+	if trimmed == "" {
+		return current, nil
+	}
+	index, err := strconv.Atoi(trimmed)
+	if err != nil || index < 1 || index > len(values) {
+		return current, fmt.Errorf("invalid condition choice")
+	}
+	return values[index-1], nil
 }
 
 func ReadProvider(in *bufio.Reader, out io.Writer) (string, string, error) {

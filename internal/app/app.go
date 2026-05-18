@@ -98,6 +98,8 @@ func runWithRecognizerFactory(ctx context.Context, cfg config.RunConfig, stdin i
 		menuCfg.TimeoutSeconds = cfg.TimeoutSeconds
 		menuCfg.MaxRetries = cfg.MaxRetries
 		menuCfg.RetryDelaySecs = cfg.RetryDelaySecs
+		menuCfg.MediaCondition = state.MediaCondition
+		menuCfg.SleeveCondition = state.SleeveCondition
 		_ = runOnce(ctx, menuCfg, stdout, stderr, factory)
 	}
 }
