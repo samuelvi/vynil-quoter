@@ -21,6 +21,7 @@ make run
 
 Docker is the supported runtime for app and test commands. You do not need Go installed on the host for normal use.
 No manual rebuild is needed for normal use: Go recompiles changed code automatically inside Docker.
+Copy `.env.example` to `.env` to override default menu/runtime values locally; CLI flags take precedence.
 
 ## Common commands
 

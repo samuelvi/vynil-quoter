@@ -45,7 +45,36 @@ Main menu:
 5. `Calidad carátula (<current sleeve condition>)`
 6. `Calidad vinilo (<current media condition>)`
 
-The menu persists after each action. Provider, model, CSV path, media condition, and sleeve condition remain selected for the session.
+The menu persists after each action. Provider, model, CSV path, media condition, and sleeve condition remain selected for the session. Choosing `0` asks for confirmation before exiting.
+
+Exit confirmation accepts `s`, `si`, `sí`, `y`, or `yes`. Pressing Enter, choosing `n`, or entering any other value returns to the main menu.
+
+## Default configuration
+
+VinylQuoter loads runtime defaults in this order:
+
+1. built-in defaults,
+2. local `.env` file when present,
+3. process environment variables,
+4. CLI flags.
+
+Use `.env.example` as the template and copy it to `.env` for local overrides. Do not commit real `.env` files.
+
+Supported variables:
+
+```text
+VINYLQUOTER_SOURCE_DIR
+VINYLQUOTER_DESTINATION_DIR
+VINYLQUOTER_REPORT_PATH
+VINYLQUOTER_PROVIDER
+VINYLQUOTER_MODEL
+VINYLQUOTER_LM_STUDIO_BASE_URL
+VINYLQUOTER_TIMEOUT_SECONDS
+VINYLQUOTER_MAX_RETRIES
+VINYLQUOTER_RETRY_DELAY_SECONDS
+VINYLQUOTER_MEDIA_CONDITION
+VINYLQUOTER_SLEEVE_CONDITION
+```
 
 ### CSV submenu
 

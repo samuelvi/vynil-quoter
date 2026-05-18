@@ -23,7 +23,10 @@ import (
 )
 
 func ParseArgs(args []string) (config.RunConfig, error) {
-	cfg := config.DefaultRunConfig()
+	cfg, err := config.LoadDefaults()
+	if err != nil {
+		return cfg, err
+	}
 	set := flag.NewFlagSet("vinyl-quoter", flag.ContinueOnError)
 	set.StringVar(&cfg.SourceDir, "src", cfg.SourceDir, "source image directory")
 	set.StringVar(&cfg.DestinationDir, "dst", cfg.DestinationDir, "cropped image directory")

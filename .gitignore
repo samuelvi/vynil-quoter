@@ -7,6 +7,11 @@ __pycache__/
 .idea/
 .DS_Store
 
+# Local environment files
+.env
+.env.*
+!.env.example
+
 # Local opencode/session state
 .mcrules*
 .mcprules*
@@ -14,6 +19,7 @@ __pycache__/
 .opencode/
 .opencode.local
 .opencode.local/
+opencode-bundle/
 memory-bank/
 .worktrees/
 

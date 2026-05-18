@@ -75,11 +75,16 @@ Menú principal requerido para `make run` sin flags:
 
 Reglas del menú:
 - Debe permanecer abierto después de cada acción.
-- Solo debe salir cuando el usuario elige `Salir`.
+- Solo debe salir cuando el usuario elige `Salir` y confirma la salida.
 - La ruta CSV, proveedor/modelo y calidades seleccionadas deben persistir durante la sesión.
 - `Guardado csv` permite cambiar ruta CSV, actualizar CSV, regenerar CSV desde cero o volver.
 - El submenú Guardado csv no debe preguntar por modelo.
 - `Modelo` permite elegir LM Studio por defecto, LM Studio alternativo o Gemini.
+
+Defaults de configuración:
+- Los valores iniciales del menú deben cargarse con esta precedencia: defaults hardcoded, `.env`, variables de entorno del proceso, flags CLI.
+- El archivo `.env` usa formato `KEY=VALUE` con variables `VINYLQUOTER_*`.
+- Debe existir `.env.example` versionado; `.env` y `.env.*` reales deben estar ignorados.
 
 Condiciones/calidades:
 - Calidad vinilo/media permitida: `M`, `NM/M-`, `VG+`, `VG`, `G+`, `G`, `F`, `P`.

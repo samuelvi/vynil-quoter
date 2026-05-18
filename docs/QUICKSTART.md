@@ -27,7 +27,7 @@ Decodable inputs are cropped locally and saved as JPG in `data/dst/`. Supported 
 make run
 ```
 
-The menu stays open after each action and exits only when you choose `Salir`.
+The menu stays open after each action and asks for confirmation when you choose `Salir`.
 
 Main menu:
 
@@ -46,6 +46,8 @@ Defaults:
 - Media condition: `VG`.
 - Sleeve condition: `VG`.
 - CSV path: `data/report/album_catalog.csv`.
+
+To override these defaults locally, copy `.env.example` to `.env` and change the `VINYLQUOTER_*` values you need. CLI flags still take precedence over `.env` and process environment values.
 
 ## 3. Run common actions directly
 

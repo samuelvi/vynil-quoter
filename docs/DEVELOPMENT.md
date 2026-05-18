@@ -106,6 +106,10 @@ The quality target runs the repository quality gate configured by the local auto
 
 Do not commit source images, cropped outputs, generated CSV reports, or generated videos.
 
+## Environment files
+
+`.env` and `.env.*` are ignored because they may contain local machine paths or secrets. Commit only `.env.example`. Runtime defaults are loaded from built-in values, then `.env`, then process environment variables, then CLI flags.
+
 ## Documentation maintenance
 
 Keep the root `README.md` lightweight. Add detail to focused files under `docs/` and link every maintained doc from `docs/index.md`.

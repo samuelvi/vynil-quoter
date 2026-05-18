@@ -34,7 +34,10 @@ func ReadMenuWithState(in io.Reader, out io.Writer, state config.RunConfig) (con
 	choice, _ := reader.ReadString('\n')
 	switch strings.TrimSpace(choice) {
 	case "0":
-		return cfg, io.EOF
+		if confirmExit(reader, out) {
+			return cfg, io.EOF
+		}
+		return cfg, ErrNoAction
 	case "1":
 		fmt.Fprint(out, "Ruta o nombre de imagen: ")
 		image, _ := reader.ReadString('\n')
@@ -74,6 +77,17 @@ func ReadMenuWithState(in io.Reader, out io.Writer, state config.RunConfig) (con
 		return cfg, fmt.Errorf("invalid menu choice")
 	}
 	return cfg, nil
+}
+
+func confirmExit(in *bufio.Reader, out io.Writer) bool {
+	fmt.Fprint(out, "¿Seguro que quieres salir? [s/N]: ")
+	answer, _ := in.ReadString('\n')
+	switch strings.ToLower(strings.TrimSpace(answer)) {
+	case "s", "si", "sí", "y", "yes":
+		return true
+	default:
+		return false
+	}
 }
 
 func readerFor(in io.Reader) *bufio.Reader {

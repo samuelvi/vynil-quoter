@@ -56,9 +56,31 @@ func TestMenuDefaultProviderIsLocalVisionModel(t *testing.T) {
 }
 
 func TestMenuExitUsesZero(t *testing.T) {
-	_, err := ui.ReadMenu(bytes.NewBufferString("0\n"), &bytes.Buffer{})
+	_, err := ui.ReadMenu(bytes.NewBufferString("0\ns\n"), &bytes.Buffer{})
 	if err == nil || err.Error() != "EOF" {
 		t.Fatalf("expected EOF for exit option 0, got %v", err)
+	}
+}
+
+func TestMenuExitConfirmationDefaultsToNo(t *testing.T) {
+	_, err := ui.ReadMenu(bytes.NewBufferString("0\n\n"), &bytes.Buffer{})
+	if err != ui.ErrNoAction {
+		t.Fatalf("expected no action when exit is not confirmed, got %v", err)
+	}
+}
+
+func TestMenuExitConfirmationRejectsNo(t *testing.T) {
+	_, err := ui.ReadMenu(bytes.NewBufferString("0\nn\n"), &bytes.Buffer{})
+	if err != ui.ErrNoAction {
+		t.Fatalf("expected no action when exit is rejected, got %v", err)
+	}
+}
+
+func TestMenuExitConfirmationPrompt(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	_, _ = ui.ReadMenu(bytes.NewBufferString("0\n\n"), stdout)
+	if !strings.Contains(stdout.String(), "¿Seguro que quieres salir? [s/N]:") {
+		t.Fatalf("missing confirmation prompt: %s", stdout.String())
 	}
 }
 
@@ -71,7 +93,7 @@ func TestMenuSevenIsInvalid(t *testing.T) {
 
 func TestMenuShowsExitAsZero(t *testing.T) {
 	stdout := &bytes.Buffer{}
-	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\n"), stdout, config.DefaultRunConfig())
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\ns\n"), stdout, config.DefaultRunConfig())
 	output := stdout.String()
 	if !strings.Contains(output, "0) Salir") {
 		t.Fatalf("menu should show exit as zero, got %s", output)
@@ -97,7 +119,7 @@ func TestMenuShowsCurrentCSVAndModelState(t *testing.T) {
 	state.ReportPath = "custom/report.csv"
 	state.Provider = config.ProviderGemini
 	state.Model = config.DefaultGeminiModel
-	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\n"), stdout, state)
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\ns\n"), stdout, state)
 	output := stdout.String()
 	if !strings.Contains(output, "Guardado csv (custom/report.csv)") {
 		t.Fatalf("menu should show current CSV path, got %s", output)
@@ -132,7 +154,7 @@ func TestMenuShowsCurrentConditionState(t *testing.T) {
 	state := config.DefaultRunConfig()
 	state.MediaCondition = "VG+"
 	state.SleeveCondition = "G+"
-	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\n"), stdout, state)
+	_, _ = ui.ReadMenuWithState(bytes.NewBufferString("0\ns\n"), stdout, state)
 	output := stdout.String()
 	if !strings.Contains(output, "Calidad carátula (G+)") {
 		t.Fatalf("menu should show sleeve condition, got %s", output)

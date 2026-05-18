@@ -53,6 +53,33 @@ func TestParseArgsDefaults(t *testing.T) {
 	}
 }
 
+func TestParseArgsUsesEnvironmentDefaults(t *testing.T) {
+	t.Setenv("VINYLQUOTER_REPORT_PATH", "env-report.csv")
+	t.Setenv("VINYLQUOTER_MEDIA_CONDITION", "VG+")
+
+	cfg, err := app.ParseArgs([]string{"--all"})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.ReportPath != "env-report.csv" || cfg.MediaCondition != "VG+" {
+		t.Fatalf("env defaults not applied: %#v", cfg)
+	}
+}
+
+func TestParseArgsFlagsOverrideEnvironmentDefaults(t *testing.T) {
+	t.Setenv("VINYLQUOTER_REPORT_PATH", "env-report.csv")
+
+	cfg, err := app.ParseArgs([]string{"--all", "--report", "flag-report.csv"})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.ReportPath != "flag-report.csv" {
+		t.Fatalf("flag should override env default: %#v", cfg)
+	}
+}
+
 func TestParseArgsDefaultsToVGConditions(t *testing.T) {
 	cfg, err := app.ParseArgs([]string{"--all"})
 	if err != nil {
@@ -354,7 +381,7 @@ func TestRunInteractiveReturnsToMenuUntilExit(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
-	stdin := bytes.NewBufferString("1\n" + image + "\n0\n")
+	stdin := bytes.NewBufferString("1\n" + image + "\n0\ns\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
@@ -383,7 +410,7 @@ func TestRunInteractivePersistsSelectedModelAndCSV(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := filepath.Join(tmp, "custom.csv")
-	stdin := bytes.NewBufferString("4\n3\n3\n1\n" + report + "\n1\n" + image + "\n0\n")
+	stdin := bytes.NewBufferString("4\n3\n3\n1\n" + report + "\n1\n" + image + "\n0\ns\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
@@ -411,7 +438,7 @@ func TestRunInteractivePersistsSelectedConditions(t *testing.T) {
 	image := filepath.Join(src, "DSC01.jpg")
 	writeTinyJPEG(t, image)
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
-	stdin := bytes.NewBufferString("5\n3\n6\n5\n1\n" + image + "\n0\n")
+	stdin := bytes.NewBufferString("5\n3\n6\n5\n1\n" + image + "\n0\ns\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
@@ -453,7 +480,7 @@ func TestRunInteractiveOptionTwoProcessesAllImages(t *testing.T) {
 		}
 	}
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
-	stdin := bytes.NewBufferString("2\n0\n")
+	stdin := bytes.NewBufferString("2\n0\ns\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
@@ -490,7 +517,7 @@ func TestRunInteractiveResetsActionModeAfterOptionTwo(t *testing.T) {
 		}
 	}
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
-	stdin := bytes.NewBufferString("2\n1\nDSC01.jpg\n0\n")
+	stdin := bytes.NewBufferString("2\n1\nDSC01.jpg\n0\ns\n")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cfg := config.DefaultRunConfig()
