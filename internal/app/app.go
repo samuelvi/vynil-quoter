@@ -149,7 +149,7 @@ func ProcessWithConfig(ctx context.Context, images []string, reportPath string, 
 		if cropErr != nil {
 			imageForRecognition = image
 		}
-		identification, err := recognizer.Identify(ctx, imageForRecognition)
+		identification, err := recognizer.Identify(ctx, provider.RecognitionRequest{ImagePath: imageForRecognition, MediaCondition: cfg.MediaCondition, SleeveCondition: cfg.SleeveCondition})
 		if err != nil {
 			identification = catalog.Identification{Artist: "Unknown", Title: "Unknown", IdentificationConfidence: "manual-review", PriceConfidence: "manual-review", Notes: "identification failed: " + err.Error()}
 		}

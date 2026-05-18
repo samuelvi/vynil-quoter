@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"vinylquoter/internal/catalog"
+	"vinylquoter/internal/provider"
 	"vinylquoter/internal/provider/jsonparse"
 	"vinylquoter/internal/provider/visionpayload"
 )
@@ -20,12 +21,12 @@ type Client struct {
 	Timeout        time.Duration
 }
 
-func (c Client) Identify(ctx context.Context, imagePath string) (catalog.Identification, error) {
-	imageURL, err := visionpayload.DataURL(imagePath)
+func (c Client) Identify(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
+	imageURL, err := visionpayload.DataURL(request.ImagePath)
 	if err != nil {
 		return catalog.Identification{}, err
 	}
-	payload := map[string]any{"model": c.Model, "temperature": 0, "messages": []any{map[string]any{"role": "user", "content": []any{map[string]string{"type": "text", "text": visionpayload.Prompt()}, map[string]any{"type": "image_url", "image_url": map[string]string{"url": imageURL}}}}}}
+	payload := map[string]any{"model": c.Model, "temperature": 0, "messages": []any{map[string]any{"role": "user", "content": []any{map[string]string{"type": "text", "text": visionpayload.PromptForCondition(request.MediaCondition, request.SleeveCondition)}, map[string]any{"type": "image_url", "image_url": map[string]string{"url": imageURL}}}}}}
 	body, _ := json.Marshal(payload)
 	baseURL := strings.TrimRight(c.BaseURL, "/")
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/chat/completions", bytes.NewReader(body))

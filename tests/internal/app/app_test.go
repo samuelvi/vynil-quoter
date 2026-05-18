@@ -18,7 +18,7 @@ import (
 
 type fakeRecognizer struct{}
 
-func (fakeRecognizer) Identify(ctx context.Context, imagePath string) (catalog.Identification, error) {
+func (fakeRecognizer) Identify(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
 	return catalog.Identification{Artist: "The Cure", Title: "Disintegration", IdentificationConfidence: "high", RecommendedPriceEUR: "22", PriceConfidence: "medium", PriceBasis: "test", Notes: "ok"}, nil
 }
 
@@ -108,7 +108,9 @@ func TestProcessWritesConditionAndSanitizesPrice(t *testing.T) {
 	cfg.MediaCondition = config.ConditionVeryGoodPlus
 	cfg.SleeveCondition = config.ConditionGoodPlus
 
-	rows, err := app.ProcessWithConfig(context.Background(), []string{src}, report, false, dstDir, cfg, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+	var gotRequest provider.RecognitionRequest
+	rows, err := app.ProcessWithConfig(context.Background(), []string{src}, report, false, dstDir, cfg, recognizerFunc(func(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
+		gotRequest = request
 		return catalog.Identification{Artist: "The Cure", Title: "Disintegration", RecommendedPriceEUR: "15-20 EUR"}, nil
 	}))
 
@@ -123,6 +125,9 @@ func TestProcessWritesConditionAndSanitizesPrice(t *testing.T) {
 	}
 	if rows[0].RecommendedPriceEUR != "15-20" {
 		t.Fatalf("price should be sanitized, got %#v", rows[0])
+	}
+	if gotRequest.MediaCondition != config.ConditionVeryGoodPlus || gotRequest.SleeveCondition != config.ConditionGoodPlus {
+		t.Fatalf("recognizer should receive selected conditions, got %#v", gotRequest)
 	}
 }
 
@@ -151,7 +156,7 @@ func TestProcessSanitizesPriceVariants(t *testing.T) {
 			report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
 			dstDir := filepath.Join(tmp, "data", "dst")
 
-			rows, err := app.ProcessWithConfig(context.Background(), []string{src}, report, false, dstDir, config.DefaultRunConfig(), recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+			rows, err := app.ProcessWithConfig(context.Background(), []string{src}, report, false, dstDir, config.DefaultRunConfig(), recognizerFunc(func(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
 				return catalog.Identification{Artist: "The Cure", Title: "Disintegration", RecommendedPriceEUR: tc.price}, nil
 			}))
 
@@ -175,7 +180,7 @@ func TestProcessAddsPriceReferenceURLs(t *testing.T) {
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
 	dstDir := filepath.Join(tmp, "data", "dst")
 
-	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
 		return catalog.Identification{Artist: "The Cure", Title: "Disintegration"}, nil
 	}))
 
@@ -212,8 +217,8 @@ func TestProcessCropsSourceImageAndRecognizesDstImage(t *testing.T) {
 	report := filepath.Join(tmp, "data", "report", "album_catalog.csv")
 	dstDir := filepath.Join(tmp, "data", "dst")
 	var recognizedPath string
-	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
-		recognizedPath = imagePath
+	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
+		recognizedPath = request.ImagePath
 		return catalog.Identification{Artist: "A", Title: "T"}, nil
 	}))
 	if err != nil {
@@ -264,7 +269,7 @@ func TestProcessReprocessesExistingBasenameIdentifierAndUpdatesCSV(t *testing.T)
 	}
 	identifyCalls := 0
 
-	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
+	rows, err := app.Process(context.Background(), []string{src}, report, false, dstDir, recognizerFunc(func(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
 		identifyCalls++
 		return catalog.Identification{Artist: "Fresh", Title: "New", IdentificationConfidence: "high"}, nil
 	}))
@@ -457,8 +462,8 @@ func TestRunInteractiveOptionTwoProcessesAllImages(t *testing.T) {
 	cfg.DestinationDir = filepath.Join(tmp, "data", "dst")
 	var seen []string
 	code := app.RunWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
-		return recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
-			seen = append(seen, filepath.Base(imagePath))
+		return recognizerFunc(func(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
+			seen = append(seen, filepath.Base(request.ImagePath))
 			return catalog.Identification{Artist: "A", Title: "T"}, nil
 		}), nil
 	})
@@ -494,8 +499,8 @@ func TestRunInteractiveResetsActionModeAfterOptionTwo(t *testing.T) {
 	cfg.DestinationDir = filepath.Join(tmp, "data", "dst")
 	var seen []string
 	code := app.RunWithRecognizerFactory(context.Background(), cfg, stdin, stdout, stderr, func(config.RunConfig) (provider.Recognizer, error) {
-		return recognizerFunc(func(ctx context.Context, imagePath string) (catalog.Identification, error) {
-			seen = append(seen, filepath.Base(imagePath))
+		return recognizerFunc(func(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
+			seen = append(seen, filepath.Base(request.ImagePath))
 			return catalog.Identification{Artist: "A", Title: "T"}, nil
 		}), nil
 	})
@@ -510,8 +515,8 @@ func TestRunInteractiveResetsActionModeAfterOptionTwo(t *testing.T) {
 	}
 }
 
-type recognizerFunc func(context.Context, string) (catalog.Identification, error)
+type recognizerFunc func(context.Context, provider.RecognitionRequest) (catalog.Identification, error)
 
-func (fn recognizerFunc) Identify(ctx context.Context, imagePath string) (catalog.Identification, error) {
-	return fn(ctx, imagePath)
+func (fn recognizerFunc) Identify(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
+	return fn(ctx, request)
 }

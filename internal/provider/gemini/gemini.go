@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 	"vinylquoter/internal/catalog"
+	"vinylquoter/internal/provider"
 	"vinylquoter/internal/provider/jsonparse"
 	"vinylquoter/internal/provider/visionpayload"
 )
@@ -20,12 +21,12 @@ type Client struct {
 	RetryDelay    time.Duration
 }
 
-func (c Client) Identify(ctx context.Context, imagePath string) (catalog.Identification, error) {
-	mimeType, encodedImage, err := visionpayload.InlineImage(imagePath)
+func (c Client) Identify(ctx context.Context, request provider.RecognitionRequest) (catalog.Identification, error) {
+	mimeType, encodedImage, err := visionpayload.InlineImage(request.ImagePath)
 	if err != nil {
 		return catalog.Identification{}, err
 	}
-	payload := map[string]any{"contents": []any{map[string]any{"parts": []any{map[string]string{"text": visionpayload.Prompt()}, map[string]any{"inline_data": map[string]string{"mime_type": mimeType, "data": encodedImage}}}}}, "generationConfig": map[string]any{"temperature": 0, "responseMimeType": "application/json"}}
+	payload := map[string]any{"contents": []any{map[string]any{"parts": []any{map[string]string{"text": visionpayload.PromptForCondition(request.MediaCondition, request.SleeveCondition)}, map[string]any{"inline_data": map[string]string{"mime_type": mimeType, "data": encodedImage}}}}}, "generationConfig": map[string]any{"temperature": 0, "responseMimeType": "application/json"}}
 	body, _ := json.Marshal(payload)
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", c.Model, c.APIKey)
 	client := c.HTTPClient

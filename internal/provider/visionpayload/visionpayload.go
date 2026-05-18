@@ -14,6 +14,16 @@ import (
 const maxPreviewSide = 1400
 
 func Prompt() string {
+	return PromptForCondition("VG", "VG")
+}
+
+func PromptForCondition(mediaCondition, sleeveCondition string) string {
+	if mediaCondition == "" {
+		mediaCondition = "VG"
+	}
+	if sleeveCondition == "" {
+		sleeveCondition = "VG"
+	}
 	return "Identify the vinyl album from this cropped front cover image and estimate a conservative second-hand sale price. " +
 		"Return only JSON with this exact shape: " +
 		`{"artist":"string","title":"string",` +
@@ -22,7 +32,8 @@ func Prompt() string {
 		`"price_confidence":"high|medium|low|manual-review",` +
 		`"price_basis":"string","notes":"string"}. ` +
 		"Use Unknown for artist/title if the cover is unreadable or ambiguous. " +
-		"Price assumptions: Spain/EU market, EUR, media VG+, sleeve VG, normal second-hand sale. " +
+		"Price assumptions: Spain/EU market, EUR, media " + mediaCondition + ", sleeve " + sleeveCondition + ", normal second-hand sale. " +
+		"recommended_price_eur must be numbers only, without currency symbols or text; examples: 12 or 12-18. " +
 		"If the album or price is uncertain, use low or manual-review confidence and explain in notes. " +
 		"Do not include markdown or commentary."
 }

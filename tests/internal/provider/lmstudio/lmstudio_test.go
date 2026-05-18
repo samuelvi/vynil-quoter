@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"vinylquoter/internal/provider"
 	"vinylquoter/internal/provider/lmstudio"
 )
 
@@ -65,12 +66,12 @@ func TestIdentifySendsModelFriendlyPromptAndPreviewImage(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := lmstudio.Client{BaseURL: server.URL, Model: "test", HTTPClient: server.Client()}.Identify(context.Background(), imagePath)
+	_, err := lmstudio.Client{BaseURL: server.URL, Model: "test", HTTPClient: server.Client()}.Identify(context.Background(), provider.RecognitionRequest{ImagePath: imagePath, MediaCondition: "VG+", SleeveCondition: "G+"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, want := range []string{"exact shape", "Use Unknown", "Spain/EU market", "media VG+", "Do not include markdown or commentary"} {
+	for _, want := range []string{"exact shape", "Use Unknown", "Spain/EU market", "media VG+", "sleeve G+", "Do not include markdown or commentary"} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q: %s", want, prompt)
 		}

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"vinylquoter/internal/provider"
 	"vinylquoter/internal/provider/gemini"
 )
 
@@ -39,12 +40,12 @@ func TestIdentifySendsStrictPromptAndPreviewImage(t *testing.T) {
 	transport := &captureTransport{t: t}
 	client := gemini.Client{APIKey: "test-key", Model: "test-model", HTTPClient: &http.Client{Transport: transport}}
 
-	_, err := client.Identify(context.Background(), imagePath)
+	_, err := client.Identify(context.Background(), provider.RecognitionRequest{ImagePath: imagePath, MediaCondition: "VG+", SleeveCondition: "G+"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, want := range []string{"exact shape", "Use Unknown", "Spain/EU market", "media VG+", "Do not include markdown or commentary"} {
+	for _, want := range []string{"exact shape", "Use Unknown", "Spain/EU market", "media VG+", "sleeve G+", "Do not include markdown or commentary"} {
 		if !strings.Contains(transport.prompt, want) {
 			t.Fatalf("prompt missing %q: %s", want, transport.prompt)
 		}

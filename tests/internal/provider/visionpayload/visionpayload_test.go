@@ -15,7 +15,17 @@ import (
 
 func TestPromptDefinesStrictPricingJSONContract(t *testing.T) {
 	prompt := visionpayload.Prompt()
-	for _, want := range []string{"exact shape", "identification_confidence", "recommended_price_eur", "Spain/EU market", "media VG+", "Do not include markdown or commentary"} {
+	for _, want := range []string{"exact shape", "identification_confidence", "recommended_price_eur", "Spain/EU market", "media VG", "Do not include markdown or commentary"} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing %q: %s", want, prompt)
+		}
+	}
+}
+
+func TestPromptIncludesSelectedConditionAndNumericPriceContract(t *testing.T) {
+	prompt := visionpayload.PromptForCondition("VG+", "G+")
+
+	for _, want := range []string{"media VG+", "sleeve G+", "numbers only", "without currency", "12-18"} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q: %s", want, prompt)
 		}
