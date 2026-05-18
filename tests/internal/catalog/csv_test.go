@@ -52,7 +52,7 @@ func TestUpsertAppendsMissingRowAndPreservesExistingOrder(t *testing.T) {
 	}
 }
 
-func TestReferenceURLsUseArtistTitleAndConditionHint(t *testing.T) {
+func TestReferenceURLsUseBroadMarketplaceQueries(t *testing.T) {
 	refs := catalog.ReferenceURLs("The Cure", "Disintegration")
 
 	for name, got := range map[string]string{
@@ -60,9 +60,18 @@ func TestReferenceURLsUseArtistTitleAndConditionHint(t *testing.T) {
 		"ebay":    refs.EBay,
 		"popsike": refs.Popsike,
 	} {
-		if !strings.Contains(got, "The+Cure+Disintegration+vinyl+VG%2B+sleeve+VG%2B") {
-			t.Fatalf("%s URL missing encoded pricing query: %s", name, got)
+		if strings.Contains(got, "VG") || strings.Contains(got, "sleeve") {
+			t.Fatalf("%s URL should not contain condition hints: %s", name, got)
 		}
+	}
+	if !strings.Contains(refs.Discogs, "q=The+Cure+Disintegration") || !strings.Contains(refs.Discogs, "type=release") {
+		t.Fatalf("Discogs URL missing broad release query: %s", refs.Discogs)
+	}
+	if !strings.Contains(refs.EBay, "_nkw=The+Cure+Disintegration+vinyl+lp") {
+		t.Fatalf("eBay URL missing broad marketplace query: %s", refs.EBay)
+	}
+	if !strings.Contains(refs.Popsike, "searchtext=The+Cure+Disintegration") {
+		t.Fatalf("Popsike URL missing broad artist/title query: %s", refs.Popsike)
 	}
 	if !strings.HasPrefix(refs.Discogs, "https://www.discogs.com/search/") {
 		t.Fatalf("unexpected Discogs URL: %s", refs.Discogs)
