@@ -77,9 +77,11 @@ Main menu:
 2. Process every supported image in `data/src`.
 3. Open `Guardado csv (<current CSV path>)`.
 4. Open `Modelo (<current provider: model>)`.
-5. Exit.
+5. Open `Calidad carátula (<current sleeve condition>)`.
+6. Open `Calidad vinilo (<current media condition>)`.
+7. Exit.
 
-`Guardado csv` lets you change the current CSV path, update the current CSV, regenerate it from scratch, or go back. It does not ask for the recognition model. `Modelo` changes the model once and keeps that selection for later actions.
+`Guardado csv` lets you change the current CSV path, update the current CSV, regenerate it from scratch, or go back. It does not ask for the recognition model. `Modelo` changes the model once and keeps that selection for later actions. The two quality menus use Discogs/Goldmine-style grades (`M`, `NM/M-`, `VG+`, `VG`, `G+`, `G`, `F`, `P`; sleeve also supports `Generic`) and default both media and sleeve to `VG`.
 
 ## Raw CLI flags through Make
 
@@ -96,6 +98,8 @@ Important flags:
 - `--report`: CSV path, default `data/report/album_catalog.csv`
 - `--provider`: `lm-studio` or `gemini`
 - `--model`: model override
+- `--media-condition`: vinyl/media grade, default `VG`
+- `--sleeve-condition`: sleeve/cover grade, default `VG`
 - `--lm-studio-base-url`: default `http://localhost:1234/v1`
 
 ## CSV output
@@ -113,6 +117,7 @@ Columns:
 - `title`
 - `identification_confidence`
 - `recommended_price_eur`
+- `condition`
 - `price_confidence`
 - `price_basis`
 - `notes`
@@ -122,7 +127,9 @@ Columns:
 
 Normal processing reprocesses the selected source images every time, overwrites their prepared files in `data/dst`, and upserts CSV rows by `source_image`. Rows for images not selected in the current run are preserved. Replace mode regenerates the CSV from scratch only for all-images runs; single-image CLI runs always update/create the CSV and never replace it.
 
-Reference URL columns are generic Discogs, eBay, and Popsike search links generated from artist/title with `vinyl VG+ sleeve VG+` medium-high quality assumptions.
+`recommended_price_eur` contains only numbers or numeric ranges such as `12` or `12-18`; the currency is expressed by the column name. `condition` stores the selected grades as `media: <grade>; sleeve: <grade>`.
+
+Reference URL columns are broad Discogs, eBay, and Popsike search links generated from artist/title. They intentionally avoid condition terms such as `VG+ sleeve VG+` so searches return more results.
 
 ## Data and Git
 
