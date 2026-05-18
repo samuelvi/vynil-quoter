@@ -86,6 +86,27 @@ func TestCropIgnoresConnectedNoisyFrame(t *testing.T) {
 	}
 }
 
+func TestCropPrefersMainCoverOverLowerDistractor(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "src", "stacked-covers.jpg")
+	dstDir := filepath.Join(tmp, "dst")
+	writeStackedCoverScene(t, src)
+
+	result, err := crop.Process(src, dstDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cropped := decodeJPEG(t, result.CroppedPath)
+	bounds := cropped.Bounds()
+	if bounds.Dx() < 430 || bounds.Dx() > 560 {
+		t.Fatalf("expected crop width to retain the main cover without the whole scene, got %d", bounds.Dx())
+	}
+	if bounds.Dy() < 430 || bounds.Dy() > 560 {
+		t.Fatalf("expected crop height to retain the main cover without the lower distractor, got %d", bounds.Dy())
+	}
+}
+
 func TestCropWritesJPGForDecodedSourceRegardlessOfExtension(t *testing.T) {
 	tmp := t.TempDir()
 	src := filepath.Join(tmp, "src", "IMG_6658.DNG")
@@ -205,6 +226,43 @@ func writeNoisyFrameVinylPhoto(t *testing.T, path string) {
 	for x := 0; x < 400; x++ {
 		img.Set(x, 0, color.RGBA{R: 90, G: 100, B: 120, A: 255})
 		img.Set(x, 399, color.RGBA{R: 90, G: 100, B: 120, A: 255})
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if err := jpeg.Encode(file, img, &jpeg.Options{Quality: 95}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeStackedCoverScene(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 600, 900))
+	for y := 0; y < 900; y++ {
+		shade := uint8(155 + y*90/899)
+		for x := 0; x < 600; x++ {
+			img.Set(x, y, color.RGBA{R: shade, G: shade, B: shade, A: 255})
+		}
+	}
+	for y := 80; y < 520; y++ {
+		for x := 70; x < 530; x++ {
+			img.Set(x, y, color.RGBA{R: 24, G: 28, B: 35, A: 255})
+		}
+	}
+	for y := 130; y < 160; y++ {
+		for x := 110; x < 490; x++ {
+			img.Set(x, y, color.RGBA{R: 235, G: 232, B: 218, A: 255})
+		}
+	}
+	for y := 650; y < 890; y++ {
+		for x := 95; x < 590; x++ {
+			img.Set(x, y, color.RGBA{R: 115, G: 35, B: 82, A: 255})
+		}
 	}
 	file, err := os.Create(path)
 	if err != nil {

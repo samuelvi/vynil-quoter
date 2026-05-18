@@ -13,6 +13,17 @@ import (
 	"strings"
 )
 
+const (
+	backgroundDistanceThreshold = 45.0
+	dominantObjectMarginRatio   = 0.08
+	darkCoverMarginRatio        = 0.04
+	darkCoverMinimumSide        = 32
+	darkCoverMinimumAreaRatio   = 0.08
+	darkCoverMaximumAreaRatio   = 0.95
+	darkCoverMinimumAspect      = 0.65
+	darkCoverMaximumAspect      = 1.45
+)
+
 type Result struct {
 	SourcePath  string
 	CroppedPath string
@@ -71,20 +82,15 @@ func cropDominantObject(img image.Image) image.Image {
 	if bounds.Dx() < 8 || bounds.Dy() < 8 {
 		return img
 	}
+	if coverRect, ok := dominantDarkCoverRect(img); ok {
+		return cloneCrop(img, coverRect)
+	}
 	background := estimateBackground(img)
-	threshold := 45.0
-	foregroundRect, ok := dominantForegroundRect(img, background, threshold)
+	foregroundRect, ok := dominantForegroundRect(img, background, backgroundDistanceThreshold)
 	if !ok {
 		return centerCrop(img)
 	}
-	marginX := int(math.Round(float64(foregroundRect.Dx()) * 0.08))
-	marginY := int(math.Round(float64(foregroundRect.Dy()) * 0.08))
-	cropRect := image.Rect(
-		max(bounds.Min.X, foregroundRect.Min.X-marginX),
-		max(bounds.Min.Y, foregroundRect.Min.Y-marginY),
-		min(bounds.Max.X, foregroundRect.Max.X+marginX),
-		min(bounds.Max.Y, foregroundRect.Max.Y+marginY),
-	)
+	cropRect := expandRect(foregroundRect, bounds, dominantObjectMarginRatio)
 	if cropRect.Dx() <= 0 || cropRect.Dy() <= 0 {
 		return centerCrop(img)
 	}
@@ -92,6 +98,131 @@ func cropDominantObject(img image.Image) image.Image {
 		return centerCrop(img)
 	}
 	return cloneCrop(img, cropRect)
+}
+
+func dominantDarkCoverRect(img image.Image) (image.Rectangle, bool) {
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	if width < darkCoverMinimumSide || height < darkCoverMinimumSide {
+		return image.Rectangle{}, false
+	}
+	threshold := darkPixelThreshold(img)
+	rowCounts := countDarkRows(img, threshold)
+	yRange, ok := dominantCountRange(rowCounts, max(3, int(math.Round(float64(width)*0.08))))
+	if !ok {
+		return image.Rectangle{}, false
+	}
+	columnCounts := countDarkColumns(img, threshold, yRange)
+	xRange, ok := dominantCountRange(columnCounts, max(3, int(math.Round(float64(yRange.end-yRange.start)*0.08))))
+	if !ok {
+		return image.Rectangle{}, false
+	}
+	coverRect := image.Rect(bounds.Min.X+xRange.start, bounds.Min.Y+yRange.start, bounds.Min.X+xRange.end, bounds.Min.Y+yRange.end)
+	coverRect = expandRect(coverRect, bounds, darkCoverMarginRatio)
+	if !isUsableCoverRect(coverRect, bounds) {
+		return image.Rectangle{}, false
+	}
+	return coverRect, true
+}
+
+func darkPixelThreshold(img image.Image) int {
+	histogram := [256]int{}
+	bounds := img.Bounds()
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			histogram[luminance(img.At(x, y))]++
+		}
+	}
+	return otsuThreshold(histogram, bounds.Dx()*bounds.Dy())
+}
+
+func countDarkRows(img image.Image, threshold int) []int {
+	bounds := img.Bounds()
+	counts := make([]int, bounds.Dy())
+	for y := 0; y < bounds.Dy(); y++ {
+		for x := 0; x < bounds.Dx(); x++ {
+			if luminance(img.At(bounds.Min.X+x, bounds.Min.Y+y)) <= threshold {
+				counts[y]++
+			}
+		}
+	}
+	return counts
+}
+
+func countDarkColumns(img image.Image, threshold int, yRange foregroundRange) []int {
+	bounds := img.Bounds()
+	counts := make([]int, bounds.Dx())
+	for y := yRange.start; y < yRange.end; y++ {
+		for x := 0; x < bounds.Dx(); x++ {
+			if luminance(img.At(bounds.Min.X+x, bounds.Min.Y+y)) <= threshold {
+				counts[x]++
+			}
+		}
+	}
+	return counts
+}
+
+func isUsableCoverRect(rect image.Rectangle, bounds image.Rectangle) bool {
+	if rect.Empty() || rect.Dx() < darkCoverMinimumSide || rect.Dy() < darkCoverMinimumSide {
+		return false
+	}
+	area := bounds.Dx() * bounds.Dy()
+	coverArea := rect.Dx() * rect.Dy()
+	if coverArea < int(float64(area)*darkCoverMinimumAreaRatio) {
+		return false
+	}
+	if coverArea > int(float64(area)*darkCoverMaximumAreaRatio) {
+		return false
+	}
+	aspect := float64(rect.Dx()) / float64(rect.Dy())
+	return aspect >= darkCoverMinimumAspect && aspect <= darkCoverMaximumAspect
+}
+
+func otsuThreshold(histogram [256]int, total int) int {
+	sum := 0
+	for value, count := range histogram {
+		sum += value * count
+	}
+	backgroundWeight := 0
+	backgroundSum := 0
+	bestThreshold := 0
+	bestVariance := -1.0
+	for threshold, count := range histogram {
+		backgroundWeight += count
+		if backgroundWeight == 0 {
+			continue
+		}
+		foregroundWeight := total - backgroundWeight
+		if foregroundWeight == 0 {
+			break
+		}
+		backgroundSum += threshold * count
+		backgroundMean := float64(backgroundSum) / float64(backgroundWeight)
+		foregroundMean := float64(sum-backgroundSum) / float64(foregroundWeight)
+		variance := float64(backgroundWeight) * float64(foregroundWeight) * math.Pow(backgroundMean-foregroundMean, 2)
+		if variance > bestVariance {
+			bestVariance = variance
+			bestThreshold = threshold
+		}
+	}
+	return bestThreshold
+}
+
+func luminance(c color.Color) int {
+	r, g, b, _ := c.RGBA()
+	return (299*int(r>>8) + 587*int(g>>8) + 114*int(b>>8)) / 1000
+}
+
+func expandRect(rect image.Rectangle, bounds image.Rectangle, marginRatio float64) image.Rectangle {
+	marginX := int(math.Round(float64(rect.Dx()) * marginRatio))
+	marginY := int(math.Round(float64(rect.Dy()) * marginRatio))
+	return image.Rect(
+		max(bounds.Min.X, rect.Min.X-marginX),
+		max(bounds.Min.Y, rect.Min.Y-marginY),
+		min(bounds.Max.X, rect.Max.X+marginX),
+		min(bounds.Max.Y, rect.Max.Y+marginY),
+	)
 }
 
 func estimateBackground(img image.Image) color.Color {
