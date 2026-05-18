@@ -1,411 +1,155 @@
-# Secuencia de prompts para generar VinylQuoter con IA
+# Prompt para regenerar VinylQuoter con IA
 
-Objetivo: mostrar cómo se podría haber generado este proyecto desde cero usando una IA de forma ordenada: primero comprensión y planificación, después ejecución por fases con Go, Docker de test, Makefile, documentación y verificación.
-
-## Prompt 01 — Contexto y objetivo
+Usa este prompt como instrucciones canónicas para reconstruir el proyecto desde cero. No trates `.opencode/`, `.opencode.local/`, `opencode-bundle/`, `memory-bank/` ni `.worktrees/` como parte del producto: son tooling externo o estado local.
 
 ```text
-Actúa como agente builder. Quiero crear una herramienta CLI llamada VinylQuoter.
+Actúa como agente builder senior y genera desde cero un proyecto llamado VinylQuoter.
 
-Parte de un proyecto vacío: no hay código previo, no hay estructura inicial y no debes asumir que existe ninguna implementación anterior.
-
-Stack obligatorio:
-- Lenguaje: Go desde el inicio.
-- Ejecución: todos los comandos de aplicación y test deben correr dentro de Docker.
-- Docker: configura un entorno de test en `docker/test`.
-- Makefile: encapsula los comandos necesarios para construir, levantar, probar, ejecutar y parar el entorno.
-- `make run` debe preparar Docker automáticamente si la imagen no existe.
-- `make test` debe preparar Docker automáticamente antes de ejecutar los tests.
+Contexto inicial:
+- El repositorio está vacío salvo instrucciones de producto.
+- No hay código existente que conservar.
+- El proyecto final debe ser una CLI en Go, ejecutada y probada mediante Docker y Makefile.
+- No uses Python, Node ni scripts auxiliares para implementar el producto.
 
 Objetivo del producto:
-- Leer imágenes de portadas de vinilos.
-- recortar localmente las imágenes decodificables de data/src para aislar el vinilo/portada frente a fondos u otros objetos.
-- guardar el recorte como JPG en data/dst; si un formato soportado no se puede decodificar localmente, copiarlo a data/dst como fallback.
-- analizar la imagen preparada desde data/dst, no la original de data/src.
-- Identificar a qué álbum corresponden.
-- Obtener artista/banda y título del álbum.
-- Generar una valoración conservadora en euros.
-- Exportar un CSV final con confianza, base de precio y notas.
+Crear una herramienta CLI que identifique discos de vinilo a partir de imágenes de portada y genere un catálogo CSV con valoración conservadora en euros.
 
-Antes de implementar:
-1. Asume que el repositorio está vacío salvo instrucciones de proyecto.
-2. Define la estructura Go inicial (`go.mod`, `cmd/`, `internal/`).
-3. Define el Docker de test en `docker/test`.
-4. Define los comandos Makefile que encapsulan Docker y Go.
-5. Resume objetivo, restricciones y criterios de aceptación.
-6. Propón un plan por fases.
-7. No escribas código hasta que apruebe el plan.
-```
-
-Resultado esperado:
-- La IA entiende que el proyecto nace desde cero.
-- Define arquitectura Go idiomática.
-- Define Docker test y Makefile como base operativa.
-- Propone fases pequeñas y verificables.
-
-## Prompt 02 — Diseño funcional
-
-```text
-Diseña el flujo funcional de la herramienta.
-
-Debe permitir:
-- Procesar una imagen concreta.
-- Procesar todas las imágenes de entrada.
-- Recortar cada imagen de data/src antes de llamar al modelo.
-- Guardar el recorte en data/dst con nombre trazable a la imagen original.
-- Analizar la imagen recortada y escribir la información del vinilo en el CSV.
-- Actualizar el CSV existente sin duplicar imágenes.
-- Machacar/regenerar el CSV desde cero.
-- Elegir proveedor de reconocimiento: LM Studio local o Gemini.
-
-Menú principal requerido cuando se ejecuta sin flags:
-1. Procesar una imagen concreta.
-2. Procesar todas las imágenes de `data/src`.
-3. `Guardado csv (<ruta actual>)`.
-4. `Modelo (<proveedor: modelo actual>)`.
-5. Salir.
-
-Comportamiento del menú:
-- Debe permanecer abierto después de cada acción.
-- Solo debe salir cuando el usuario elige Salir.
-- `Guardado csv` debe mostrar la ruta actual entre paréntesis.
-- `Guardado csv` debe permitir cambiar ruta CSV, actualizar CSV, regenerar CSV o volver.
-- El submenú Guardado csv no debe preguntar por modelo.
-- `Modelo` debe mostrar el modelo actual entre paréntesis en el menú principal.
-- `Modelo` debe permitir elegir LM Studio por defecto, LM Studio alternativo o Gemini.
-- La selección de modelo y ruta CSV debe persistir durante la sesión interactiva.
-
-Entrega:
-- Opciones de enfoque con pros y contras.
-- Diseño recomendado.
-- Estructura inicial de responsabilidades Go.
-- Diseño del Docker test en `docker/test`.
-- Lista de comandos Makefile propuestos.
-- Plan de pruebas.
-```
-
-Resultado esperado:
-- Menú CLI definido.
-- Política update/replace clara.
-- Proveedor local por defecto.
-
-## Prompt 03 — Plan técnico por fases
-
-```text
-Crea un plan técnico de implementación por fases.
-
-Condiciones:
-- Usa TDD siempre que sea posible.
-- Cada fase debe tener objetivo, archivos afectados, tests y verificación.
-- Separa responsabilidades en módulos pequeños.
-- Evita datos reales en Git.
-- Go es obligatorio desde la primera fase.
-- No propongas prototipos en Python ni migraciones posteriores.
-- Docker de test debe vivir en `docker/test`.
-- Todos los comandos Go deben ejecutarse dentro del Docker test.
+Stack obligatorio:
+- Go 1.23 desde el primer commit.
+- Docker Compose en `docker/test` como runtime de aplicación y tests.
+- Makefile como interfaz operativa principal.
+- Todos los comandos de app y tests deben ejecutarse dentro de Docker.
 - make run debe preparar Docker automáticamente.
 - make test debe preparar Docker automáticamente.
-- Añade comandos Makefile para construir, levantar, ejecutar, probar y parar el contenedor.
 
-No implementes todavía. Solo genera el plan.
-```
+Pipeline obligatorio:
+1. Leer imágenes desde `data/src/`.
+2. Preparar cada imagen en `data/dst/` antes de llamar al modelo.
+3. Para formatos decodificables localmente, recortar localmente las imágenes decodificables de data/src, aislar la zona dominante de portada/vinilo y guardar JPG en `data/dst/`.
+4. Para formatos soportados que no se puedan decodificar localmente, copiarlo a data/dst como fallback.
+5. Enviar al proveedor de visión la ruta preparada de `data/dst/`, no la imagen original de `data/src/`; analizar la imagen preparada.
+6. Identificar artista/banda, título de álbum, confianza, precio conservador en EUR, base de precio y notas.
+7. Escribir o actualizar `data/report/album_catalog.csv`.
 
-Resultado esperado:
-- Plan por fases listo para ejecución.
-- Tests definidos antes del código.
-- Verificaciones explícitas.
+Directorios de datos:
+- `data/src/`: imágenes de entrada.
+- `data/dst/`: imágenes preparadas.
+- `data/report/`: CSV final.
+- `data/video/`: material audiovisual opcional.
+- Ignora el contenido real de `data/` en Git y conserva solo `.gitkeep`.
 
-## Prompt 04 — Fase 1: base Go + Docker test + Makefile
-
-```text
-Ejecuta la fase 1 del plan.
-
-Desde un repositorio vacío, crea la base del proyecto:
+Estructura Go objetivo:
 - `go.mod`
 - `cmd/vinyl-quoter/main.go`
-- paquetes iniciales bajo `internal/`
-- Docker test en `docker/test/Dockerfile`
-- Compose en `docker/test/docker-compose.yml`
-- Makefile con comandos encapsulados.
+- `internal/app`: parsing de flags, loop interactivo y orquestación.
+- `internal/catalog`: CSV, cabecera, lectura, escritura, upsert y URLs de referencia.
+- `internal/config`: valores por defecto, proveedores, modelos y calidades.
+- `internal/crop`: preparación local de imágenes en `data/dst`.
+- `internal/imageinput`: descubrimiento de imágenes soportadas.
+- `internal/provider`: interfaz `Recognizer` y tipos comunes.
+- `internal/provider/lmstudio`: cliente LM Studio compatible con API OpenAI.
+- `internal/provider/gemini`: cliente Gemini.
+- `internal/provider/visionpayload`: prompt y payload compartidos para visión.
+- `internal/provider/jsonparse`: extracción robusta de JSON de respuestas de modelo.
+- `internal/ui`: menú interactivo.
+- `tests/`: tests Go que reflejen las rutas de implementación.
 
-Comandos mínimos del Makefile:
-- make docker-build
-- make run
-- make test
-- make test-build
-- make test-up
-- make test-down
-- make test-shell
+Formatos soportados:
+`.jpg`, `.jpeg`, `.png`, `.webp`, `.dng`, `.heic`, `.heif`, `.tif`, `.tiff`.
 
-Todos los comandos Go deben ejecutarse dentro del contenedor test. `make run` y `make test` deben preparar Docker automáticamente antes de ejecutar Go.
+Proveedores de reconocimiento:
+- Por defecto: LM Studio local con modelo `qwen2.5-vl-7b-instruct`.
+- Alternativo local: LM Studio con `gemma-3-4b-it`.
+- Opcional: Gemini con `gemini-2.5-flash-lite`, usando `GEMINI_API_KEY` desde entorno.
+- No imprimas secretos ni valores de variables de entorno.
+- Los tests no deben hacer llamadas reales de red.
 
-Implementa primero tests que verifiquen:
-- Existen los archivos base.
-- El Makefile usa Docker para ejecutar `go test ./...`.
-- El Compose usa bind mounts explícitos.
+Menú principal requerido para `make run` sin flags:
+1. `Procesar una imagen concreta`
+2. `Procesar todas las imágenes de data/src`
+3. `Guardado csv (<ruta actual>)`
+4. `Modelo (<proveedor: modelo actual>)`
+5. `Calidad carátula (<calidad actual>)`
+6. `Calidad vinilo (<calidad actual>)`
+7. `Salir`
 
-Después implementa el mínimo código necesario para pasar los tests.
-Reporta comandos ejecutados y resultados.
+Reglas del menú:
+- Debe permanecer abierto después de cada acción.
+- Solo debe salir cuando el usuario elige `Salir`.
+- La ruta CSV, proveedor/modelo y calidades seleccionadas deben persistir durante la sesión.
+- `Guardado csv` permite cambiar ruta CSV, actualizar CSV, regenerar CSV desde cero o volver.
+- El submenú Guardado csv no debe preguntar por modelo.
+- `Modelo` permite elegir LM Studio por defecto, LM Studio alternativo o Gemini.
+
+Condiciones/calidades:
+- Calidad vinilo/media permitida: `M`, `NM/M-`, `VG+`, `VG`, `G+`, `G`, `F`, `P`.
+- Calidad carátula/sleeve permitida: `M`, `NM/M-`, `VG+`, `VG`, `G+`, `G`, `F`, `P`, `Generic`.
+- Ambas calidades deben defaultar a `VG`.
+- Las calidades deben enviarse en el prompt del proveedor.
+- El CSV debe guardar `condition` como `media: <grade>; sleeve: <grade>`.
+
+Flags mínimos de CLI:
+- `--src`: directorio de origen, default `data/src`.
+- `--dst`: directorio de imágenes preparadas, default `data/dst`.
+- `--report`: ruta CSV, default `data/report/album_catalog.csv`.
+- `--image`: procesa una imagen concreta.
+- `--all`: procesa todas las imágenes soportadas.
+- `--replace`: regenera el CSV, solo relevante con `--all`.
+- `--provider`: `lm-studio` o `gemini`.
+- `--model`: override de modelo.
+- `--lm-studio-base-url`: URL base compatible OpenAI.
+- `--timeout`, `--max-retries`, `--retry-delay`.
+- `--media-condition` y `--sleeve-condition`.
+
+Makefile requerido:
+- `make docker-build`
+- `make docker-up`
+- `make docker-down`
+- `make docker-shell`
+- `make build`
+- `make run`
+- `make run IMAGE=data/src/DSC01.jpg`
+- `make run-all`
+- `make run-all-replace`
+- `make run-gemini`
+- `make run-cli ARGS="..."`
+- `make test`
+- `make quality`
+- Aliases compatibles: `make test-build`, `make test-up`, `make test-down`, `make test-shell`.
+
+Comportamiento CSV:
+- Cabecera exacta:
+  `source_image,artist,title,identification_confidence,recommended_price_eur,condition,price_confidence,price_basis,notes,discogs_reference_url,ebay_reference_url,popsike_reference_url`
+- `source_image` debe ser el nombre del archivo original, por ejemplo `DSC01.jpg`.
+- El procesamiento normal debe reprocessar imágenes seleccionadas y hacer upsert por `source_image`.
+- Las filas no seleccionadas deben conservarse.
+- `--replace` con `--all` debe regenerar el CSV desde cero.
+- Una ejecución de imagen única nunca debe reemplazar todo el CSV.
+- `recommended_price_eur` debe contener solo números o rangos numéricos como `12` o `12-18`.
+- Las URLs Discogs, eBay y Popsike deben ser búsquedas amplias basadas en artista/título, sin términos de condición como `VG+` o `sleeve`.
+
+Documentación obligatoria:
+- `README.md` debe ser ligero: qué es, flujo básico, comandos esenciales, enlaces a docs, layout y política de datos.
+- `docs/QUICKSTART.md`: uso rápido.
+- `docs/USAGE.md`: menú, flags, proveedores, condiciones y pipeline.
+- `docs/CSV.md`: columnas, update/replace, precios, condiciones y URLs.
+- `docs/DEVELOPMENT.md`: Docker, tests, calidad, estructura y Makefile.
+- `docs/index.md`: índice enlazando toda la documentación mantenida.
+
+Plan de ejecución obligatorio:
+1. Restate objetivo, restricciones y criterios de aceptación.
+2. Diseña arquitectura y fases antes de implementar.
+3. Usa TDD siempre que sea viable.
+4. Implementa en fases pequeñas y verificables.
+5. Ejecuta tests dentro de Docker mediante Makefile.
+6. No declares finalizado sin evidencia fresca de verificación.
+
+Criterios de aceptación:
+- `make test` pasa dentro de Docker.
+- `make quality` pasa.
+- `docker compose -f docker/test/docker-compose.yml config` es válido.
+- `make run` abre el menú interactivo descrito.
+- `make run-all` actualiza el CSV usando `data/src → data/dst → modelo → CSV`.
+- `make run-all-replace` regenera el CSV desde los inputs actuales.
+- La documentación principal enlaza a los documentos detallados.
 ```
-
-Resultado esperado:
-- Proyecto Go inicial.
-- Docker test funcional en `docker/test`.
-- Makefile como única interfaz operativa.
-- Evidencia de RED/GREEN.
-
-## Prompt 05 — Fase 2: CLI y CSV en Go
-
-```text
-Ejecuta la fase 2 del plan.
-
-Implementa en Go, primero con tests:
-- Selección de una imagen.
-- Selección de todas las imágenes soportadas.
-- Escritura del CSV.
-- Lectura del CSV existente.
-- Modo actualizar.
-- Modo reemplazar.
-
-Después implementa el mínimo código necesario para pasar los tests.
-Reporta comandos ejecutados y resultados.
-```
-
-Resultado esperado:
-- Comportamiento base cubierto por tests.
-- CSV estable.
-- Evidencia de RED/GREEN.
-
-## Prompt 06 — Fase 3: proveedores de IA
-
-```text
-Ejecuta la fase 3 del plan.
-
-Añade proveedores de reconocimiento:
-- LM Studio local compatible con API OpenAI.
-- Gemini como proveedor opcional seleccionable.
-
-Investiga los modelos locales disponibles y elige el mejor modelo de visión para imágenes.
-Usa ese modelo local por defecto.
-
-No imprimas secretos ni valores de variables de entorno.
-Añade tests unitarios sin llamadas reales de red.
-Ejecuta los tests mediante Makefile dentro del Docker test.
-```
-
-Resultado esperado:
-- LM Studio por defecto.
-- Gemini opcional.
-- Modelo local recomendado documentado.
-- Providers testeables sin red.
-
-## Prompt 07 — Fase 4: estructura de datos y Git hygiene
-
-```text
-Ejecuta la fase 4 del plan.
-
-Mueve las carpetas de entrada/salida a:
-- data/src
-- data/dst
-- data/report
-
-Ignora el contenido real de data/ en Git, pero conserva las carpetas vacías mediante .gitkeep.
-
-Adapta rutas por defecto, tests, Makefile y documentación.
-Verifica que los datos reales se ignoran y los .gitkeep se versionan.
-Ejecuta la verificación desde el Docker test mediante Makefile.
-```
-
-Resultado esperado:
-- Datos fuera del código.
-- `.gitignore` correcto.
-- Carpetas vacías presentes en Git.
-
-## Prompt 08 — Fase 5: endurecimiento del Docker test
-
-```text
-Ejecuta la fase 5 del plan.
-
-Revisa y endurece el Docker de test ya creado en:
-- docker/test/Dockerfile
-- docker/test/docker-compose.yml
-
-Requisitos:
-- Debe servir para ejecutar comandos Go.
-- Todos los volúmenes deben ser bind mounts explícitos.
-- Las cachés deben vivir bajo .cache/ dentro del proyecto.
-- El Makefile debe mantener y documentar:
-  - make docker-build
-  - make docker-up
-  - make docker-down
-  - make docker-shell
-  - make test-build
-  - make test-up
-  - make test-down
-  - make test-shell
-  - make test
-  - make run
-  - make run-all
-- Los comandos de aplicación y test deben depender de `docker-build` para preparar Docker automáticamente.
-
-Verifica Docker Compose config y tests dentro del contenedor.
-```
-
-Resultado esperado:
-- Entorno reproducible.
-- Volúmenes bind explícitos.
-- Tests ejecutándose dentro del contenedor.
-
-## Prompt 09 — Fase 6: arquitectura Go completa
-
-```text
-Completa la arquitectura Go del proyecto.
-
-Estructura objetivo:
-- cmd/vinyl-quoter/main.go
-- internal/app
-- internal/catalog
-- internal/crop
-- internal/imageinput
-- internal/provider
-- internal/provider/gemini
-- internal/provider/lmstudio
-- internal/ui
-
-Condiciones:
-- Mantén el menú interactivo y los flags equivalentes.
-- El menú interactivo debe permanecer abierto tras cada acción y solo salir con la opción Salir.
-- El menú principal debe mostrar `Guardado csv (<ruta actual>)`, modificable desde su submenú.
-- El submenú `Guardado csv` no debe preguntar por modelo.
-- El menú principal debe mostrar `Modelo (<proveedor: modelo actual>)` y permitir cambiarlo.
-- Las acciones posteriores deben reutilizar el CSV y modelo seleccionados en la sesión.
-- Mantén LM Studio como proveedor por defecto.
-- Mantén Gemini como opción.
-- Antes de reconocer, prepara cada imagen de data/src en data/dst: recorta los formatos decodificables localmente y copia como fallback los formatos soportados que no pueda decodificar.
-- El recognizer debe recibir la ruta de data/dst.
-- El CSV debe conservar como ID el nombre de la imagen original.
-- Ejecuta `go test ./...` dentro del Docker test mediante Makefile.
-- No añadas implementaciones en otros lenguajes.
-```
-
-Resultado esperado:
-- Proyecto Go con responsabilidades separadas.
-- Tests Go verdes.
-
-## Prompt 10 — Fase 7: documentación
-
-```text
-Actualiza la documentación.
-
-README.md debe explicar de forma concisa:
-- Qué hace el proyecto.
-- Estructura de carpetas.
-- Requisitos.
-- Comandos Makefile.
-- Docker test en `docker/test`.
-- Uso directo del CLI.
-- Uso mediante Make/Docker sin requerir Go instalado en host.
-- CSV generado.
-- Pipeline data/src → data/dst → modelo → CSV.
-- Política de datos y Git.
-- Troubleshooting básico.
-
-Crea además docs/QUICKSTART.md con instrucciones rápidas de uso y enlázalo desde README.md.
-```
-
-Resultado esperado:
-- README útil sin ser extenso.
-- Guía rápida separada.
-- Enlace visible desde README.
-
-## Prompt 11 — Fase 8: verificación y cierre
-
-```text
-Ejecuta la verificación final antes de afirmar que el trabajo está terminado.
-
-Comandos mínimos:
-- docker compose -f docker/test/docker-compose.yml config
-- make run --help
-- make test
-- python3 .opencode/meta/hooks/quality_gate.py --workspace . --mode quick --strict
-- git status --short
-
-Si todo pasa, crea un commit Conventional Commit adecuado.
-Resume cambios, evidencia y riesgos restantes.
-```
-
-Resultado esperado:
-- Evidencia antes de declarar finalización.
-- Quality gate verde.
-- Commit claro.
-
-# Prompt para simular un vídeo de 1 minuto
-
-```text
-Crea un vídeo de unos 60 segundos estilo screen recording cinematográfico para explicar cómo se generó VinylQuoter con IA.
-
-Idioma: castellano.
-Estilo visual: editor de código + terminal + overlays tipo HUD.
-No muestres personas ficticias. Muestra pantallas, árbol de archivos, comandos y tests.
-
-Debe verse claramente:
-- Modelo usado: GPT-5.5.
-- Agente: Builder Workflow Agent.
-- Skills activadas: brainstorming, test-driven-development, writing-plans, executing-plans, verification-before-completion.
-- Uso de contexto: git status, README, Makefile, estructura del repo, Memory Bank.
-- Planificación antes de implementar.
-- Ejecución por fases.
-- Pruebas y quality gate antes de afirmar finalización.
-
-Guion temporal:
-
-0-5s:
-Título: "VinylQuoter: generado con IA por fases".
-Overlay: "Modelo: GPT-5.5 · Agente: Builder Workflow Agent".
-
-5-12s:
-Terminal mostrando inspección del repo: git status, README, Makefile.
-Overlay: "Contexto cargado: repo + docs + historial + Memory Bank".
-
-12-20s:
-Pantalla de planificación.
-Se ve una lista de fases: diseño, CLI, proveedores IA, data/, Docker, Go, docs, verificación.
-Overlay: "Skill: brainstorming + writing-plans".
-
-20-30s:
-Tests fallando primero en rojo y luego pasando en verde.
-Overlay: "TDD: primero prueba, luego implementación".
-
-30-42s:
-Editor mostrando estructura Go:
-cmd/vinyl-quoter, internal/app, internal/catalog, internal/imageinput, internal/provider, internal/ui.
-Overlay: "Responsabilidades separadas".
-
-42-50s:
-Docker Compose mostrando bind mounts y caché local .cache/.
-Overlay: "Docker test reproducible".
-
-50-57s:
-Terminal con comandos verdes: go test ./..., make test, quality_gate.py.
-Overlay: "Evidencia antes de afirmar completado".
-
-57-60s:
-Diagrama final: data/src → data/dst → VinylQuoter → data/report/album_catalog.csv.
-Texto final: "IA útil = contexto + plan + fases + tests + verificación".
-
-Narración:
-"Este proyecto muestra una forma disciplinada de usar IA para construir software desde cero. Primero el agente entiende las restricciones: Go, Docker test y Makefile. Después transforma el objetivo en fases pequeñas: base Go, CLI, proveedores de IA, datos, Docker, documentación y verificación. Cada fase se valida con pruebas. El resultado no se declara terminado hasta ver tests, Docker y quality gate en verde. Así la IA no solo escribe código: trabaja con contexto, plan y evidencia."
-```
-
-# Storyboard resumido
-
-| Tiempo | Escena | Mensaje |
-| --- | --- | --- |
-| 0-5s | Título + HUD | Modelo y agente |
-| 5-12s | Terminal contexto | Repo, docs, Makefile, Memory Bank |
-| 12-20s | Plan por fases | Skills de planificación |
-| 20-30s | Tests RED/GREEN | TDD |
-| 30-42s | Estructura Go | Separación de responsabilidades |
-| 42-50s | Docker test | Bind mounts y caché local |
-| 50-57s | Verificaciones | go test, make test, quality gate |
-| 57-60s | Flujo final | data/src → data/dst → CSV |
