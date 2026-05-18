@@ -58,6 +58,7 @@ Interactive state is changed through `Guardado csv` and `Modelo (<current provid
 - [CSV Output](docs/CSV.md) — columns, update/replace policy, and reference URL behavior.
 - [Development Guide](docs/DEVELOPMENT.md) — Docker runtime, tests, quality checks, and project layout.
 - [Documentation Index](docs/index.md) — all maintained docs and active implementation plans.
+- [AI Generation Video Plan](docs/superpowers/plans/2026-05-18-ai-generation-video.md) — plan for the illustrative opencode/My-Agent project generation video.
 
 ## Project layout
 

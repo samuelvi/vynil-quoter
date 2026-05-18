@@ -3,6 +3,8 @@ package projectfiles_test
 import (
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -64,6 +66,49 @@ func TestVideoGeneratorProjectFiles(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(root(t), path)); err != nil {
 			t.Fatalf("missing %s: %v", path, err)
 		}
+	}
+}
+
+func TestVideoGeneratorDocumentsAIGenerationWorkflow(t *testing.T) {
+	generator := read(t, "tools/video/generate_video.py")
+	for _, want := range []string{
+		"prompt.txt",
+		"opencode",
+		"open-bundle",
+		"My-Agent",
+		"Contexto IA aprox.",
+		"qwen2.5-vl-7b-instruct",
+		"gemma-3-4b-it",
+		"gemini-2.5-flash-lite",
+		"brainstorming",
+		"writing-plans",
+		"test-driven-development",
+		"verification-before-completion",
+	} {
+		if !strings.Contains(generator, want) {
+			t.Fatalf("video generator missing %q", want)
+		}
+	}
+}
+
+func TestVideoGeneratorDurationStaysWithinRequestedBounds(t *testing.T) {
+	generator := read(t, "tools/video/generate_video.py")
+	matches := regexp.MustCompile(`"duration":\s*(\d+)`).FindAllStringSubmatch(generator, -1)
+	if len(matches) < 8 {
+		t.Fatalf("expected at least 8 video scenes, got %d", len(matches))
+	}
+
+	totalSeconds := 0
+	for _, match := range matches {
+		seconds, err := strconv.Atoi(match[1])
+		if err != nil {
+			t.Fatalf("invalid duration %q: %v", match[1], err)
+		}
+		totalSeconds += seconds
+	}
+
+	if totalSeconds < 60 || totalSeconds > 180 {
+		t.Fatalf("video duration should be 60-180 seconds, got %d", totalSeconds)
 	}
 }
 

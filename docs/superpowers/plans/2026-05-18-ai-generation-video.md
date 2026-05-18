@@ -1,3 +1,125 @@
+# AI Generation Video Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Generate a 1–3 minute Spanish educational MP4 showing how `My-Agent` uses `prompt.txt`, opencode, open-bundle, models, agents, skills, and approximate AI context to build VinylQuoter.
+
+**Architecture:** Keep the existing local video generator in `tools/video/generate_video.py`, but upgrade its slide data and renderer into an opencode-inspired classroom layout. Use Go project-file tests to enforce the requested terms and duration bounds because the repository's normal verification path is `make test` inside Docker.
+
+**Tech Stack:** Python 3.12, Pillow, ffmpeg/ffprobe via `docker/video`, Go tests via `make test`, opencode quality gate.
+
+---
+
+## Scope check
+
+This plan covers one subsystem: the local illustrative video generator and its generated MP4 artifact. It does not change VinylQuoter application behavior, provider clients, CSV logic, or Makefile targets.
+
+## File structure
+
+- Modify: `tests/internal/projectfiles/project_test.go` — add regression tests that verify the generator script contains the requested AI workflow concepts and that configured slide duration remains within 60–180 seconds.
+- Modify: `tools/video/generate_video.py` — replace the current generic 60-second slide deck with a 90-second opencode/My-Agent lesson layout.
+- Generate locally, not committed: `data/video/vinylquoter-ai-demo.mp4` — ignored MP4 output.
+- Existing runtime kept unchanged: `docker/video/Dockerfile` and `docker/video/docker-compose.yml`.
+
+## Commit policy
+
+Do not commit during execution unless the user explicitly authorizes it. Use `git status --short` and `git diff` for handoff instead of automatic commit steps.
+
+### Task 1: Add failing generator guardrail tests
+
+**Files:**
+- Modify: `tests/internal/projectfiles/project_test.go`
+
+- [ ] **Step 1: Extend imports for duration parsing**
+
+Replace the import block at the top of `tests/internal/projectfiles/project_test.go` with:
+
+```go
+import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"testing"
+)
+```
+
+- [ ] **Step 2: Add workflow content regression test**
+
+Append this test after `TestVideoGeneratorProjectFiles`:
+
+```go
+func TestVideoGeneratorDocumentsAIGenerationWorkflow(t *testing.T) {
+	generator := read(t, "tools/video/generate_video.py")
+	for _, want := range []string{
+		"prompt.txt",
+		"opencode",
+		"open-bundle",
+		"My-Agent",
+		"Contexto IA aprox.",
+		"qwen2.5-vl-7b-instruct",
+		"gemma-3-4b-it",
+		"gemini-2.5-flash-lite",
+		"brainstorming",
+		"writing-plans",
+		"test-driven-development",
+		"verification-before-completion",
+	} {
+		if !strings.Contains(generator, want) {
+			t.Fatalf("video generator missing %q", want)
+		}
+	}
+}
+```
+
+- [ ] **Step 3: Add duration bounds regression test**
+
+Append this test after `TestVideoGeneratorDocumentsAIGenerationWorkflow`:
+
+```go
+func TestVideoGeneratorDurationStaysWithinRequestedBounds(t *testing.T) {
+	generator := read(t, "tools/video/generate_video.py")
+	matches := regexp.MustCompile(`"duration":\s*(\d+)`).FindAllStringSubmatch(generator, -1)
+	if len(matches) < 8 {
+		t.Fatalf("expected at least 8 video scenes, got %d", len(matches))
+	}
+
+	totalSeconds := 0
+	for _, match := range matches {
+		seconds, err := strconv.Atoi(match[1])
+		if err != nil {
+			t.Fatalf("invalid duration %q: %v", match[1], err)
+		}
+		totalSeconds += seconds
+	}
+
+	if totalSeconds < 60 || totalSeconds > 180 {
+		t.Fatalf("video duration should be 60-180 seconds, got %d", totalSeconds)
+	}
+}
+```
+
+- [ ] **Step 4: Run the new tests and verify they fail before implementation**
+
+Run:
+
+```bash
+make test
+```
+
+Expected: FAIL in `vinylquoter/tests/internal/projectfiles` because the current generator does not include all required strings such as `open-bundle`, `My-Agent`, and `Contexto IA aprox.`.
+
+### Task 2: Implement the opencode classroom video generator
+
+**Files:**
+- Modify: `tools/video/generate_video.py`
+
+- [ ] **Step 1: Replace `tools/video/generate_video.py` with the approved generator**
+
+Replace the whole file with:
+
+```python
 #!/usr/bin/env python3
 """Generate a local MP4 lesson about AI-assisted VinylQuoter generation."""
 
@@ -29,6 +151,7 @@ BLUE = "#60a5fa"
 GREEN = "#86efac"
 YELLOW = "#fde68a"
 PURPLE = "#c4b5fd"
+RED = "#fca5a5"
 
 SLIDES = [
     {
@@ -207,15 +330,7 @@ def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def draw_wrapped(
-    draw: ImageDraw.ImageDraw,
-    text: str,
-    xy: tuple[int, int],
-    max_chars: int,
-    fill: str,
-    text_font: ImageFont.FreeTypeFont,
-    line_gap: int = 6,
-) -> int:
+def draw_wrapped(draw: ImageDraw.ImageDraw, text: str, xy: tuple[int, int], max_chars: int, fill: str, text_font: ImageFont.FreeTypeFont, line_gap: int = 6) -> int:
     x, y = xy
     for line in wrap(text, width=max_chars):
         draw.text((x, y), line, fill=fill, font=text_font)
@@ -239,13 +354,7 @@ def draw_context_meter(draw: ImageDraw.ImageDraw, percent: int) -> None:
     draw.rounded_rectangle((868, 134, 868 + fill_width, 150), radius=8, fill="#22c55e")
 
 
-def draw_panel(
-    draw: ImageDraw.ImageDraw,
-    title: str,
-    lines: list[str],
-    box: tuple[int, int, int, int],
-    accent: str,
-) -> None:
+def draw_panel(draw: ImageDraw.ImageDraw, title: str, lines: list[str], box: tuple[int, int, int, int], accent: str) -> None:
     x1, y1, x2, y2 = box
     title_font = font(20, bold=True)
     body_font = font(22)
@@ -281,12 +390,7 @@ def draw_slide(slide: dict[str, object], path: Path) -> None:
 
     draw.rounded_rectangle((64, 560, 1216, 646), radius=18, fill="#172554", outline="#3b82f6", width=2)
     draw_wrapped(draw, "Texto profesor: " + str(slide["caption"]), (88, 584), 94, TEXT, caption_font, line_gap=5)
-    draw.text(
-        (66, 674),
-        "Sin voz · texto narrativo en pantalla · generado localmente con Pillow + ffmpeg",
-        fill="#7d8caf",
-        font=footer_font,
-    )
+    draw.text((66, 674), "Sin voz · texto narrativo en pantalla · generado localmente con Pillow + ffmpeg", fill="#7d8caf", font=footer_font)
 
     img.save(path)
 
@@ -332,3 +436,102 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+```
+
+- [ ] **Step 2: Run the guardrail tests and verify they pass**
+
+Run:
+
+```bash
+make test
+```
+
+Expected: PASS for `vinylquoter/tests/internal/projectfiles` and all existing packages.
+
+### Task 3: Generate and verify the MP4 artifact
+
+**Files:**
+- Generate ignored output: `data/video/vinylquoter-ai-demo.mp4`
+
+- [ ] **Step 1: Generate the video inside the existing video container**
+
+Run:
+
+```bash
+docker compose -f docker/video/docker-compose.yml run --rm video-generator python3 tools/video/generate_video.py
+```
+
+Expected output includes:
+
+```text
+Video generated: /workspace/data/video/vinylquoter-ai-demo.mp4
+```
+
+- [ ] **Step 2: Verify the MP4 duration is within the accepted range**
+
+Run:
+
+```bash
+docker compose -f docker/video/docker-compose.yml run --rm video-generator ffprobe -v error -show_entries format=duration -of default=nk=1:nw=1 data/video/vinylquoter-ai-demo.mp4
+```
+
+Expected: a numeric duration between `60.000000` and `180.000000`, approximately `90.000000`.
+
+- [ ] **Step 3: Confirm generated MP4 remains ignored**
+
+Run:
+
+```bash
+git status --short --ignored data/video/vinylquoter-ai-demo.mp4
+```
+
+Expected:
+
+```text
+!! data/video/vinylquoter-ai-demo.mp4
+```
+
+### Task 4: Final verification and handoff evidence
+
+**Files:**
+- Read-only verification of repository state.
+
+- [ ] **Step 1: Run the full Docker test suite**
+
+Run:
+
+```bash
+make test
+```
+
+Expected: all Go packages pass, including `vinylquoter/tests/internal/projectfiles`.
+
+- [ ] **Step 2: Prepare opencode quality gate in the worktree if needed**
+
+Run:
+
+```bash
+if [ ! -f .opencode/meta/hooks/quality_gate.py ]; then git submodule update --init opencode-bundle && make opencode.init; fi
+```
+
+Expected: `.opencode/meta/hooks/quality_gate.py` exists after the command. If submodule initialization is unavailable because of credentials or network access, report that blocker and run the same quality gate command from a workspace where `.opencode` is already initialized.
+
+- [ ] **Step 3: Run the mandatory strict quick quality gate**
+
+Run:
+
+```bash
+python3 .opencode/meta/hooks/quality_gate.py --workspace . --mode quick --strict
+```
+
+Expected: output indicates `ok: true` or equivalent successful strict quick gate status.
+
+- [ ] **Step 4: Review diff and status for handoff**
+
+Run:
+
+```bash
+git status --short && git diff -- tests/internal/projectfiles/project_test.go tools/video/generate_video.py docs/superpowers/specs/2026-05-18-ai-generation-video-design.md docs/superpowers/plans/2026-05-18-ai-generation-video.md
+```
+
+Expected: only the plan/spec and intended source/test files are modified or added; `data/video/vinylquoter-ai-demo.mp4` remains ignored.
